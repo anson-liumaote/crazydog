@@ -61,22 +61,22 @@ class RosTopicManager(Node):
 
     def foc_callback(self, msg):
         if msg.data[0] == 513.:   # motor left
-            self.foc_left.angle = msg.data[1]
-            self.foc_left.speed = msg.data[2]
-            self.foc_left.current = msg.data[3]
+            self.foc_left.angle = -msg.data[1]
+            self.foc_left.speed = -msg.data[2]
+            self.foc_left.current = -msg.data[3]
             self.foc_left.temperature = msg.data[4]
         elif msg.data[0] == 514.: # motor right
-            self.foc_right.angle = -msg.data[1]
-            self.foc_right.speed = -msg.data[2]
-            self.foc_right.current = -msg.data[3]
+            self.foc_right.angle = msg.data[1]
+            self.foc_right.speed = msg.data[2]
+            self.foc_right.current = msg.data[3]
             self.foc_right.temperature = msg.data[4]
         else:
             self.get_logger().error('foc callback id error')
     
     def send_foc_command(self, current_left, current_right):
         msg = Float32MultiArray()
-        torque_const = 0.3  # N-m/A
-        msg.data = [current_left/torque_const, -current_right/torque_const]
+        torque_const = 0.247  # 0.3 N-m/A
+        msg.data = [-current_left/torque_const, current_right/torque_const]
         self.foc_command_publisher.publish(msg)
 
     def get_foc_status(self):
@@ -95,6 +95,7 @@ class RosTopicManager(Node):
         self.row_dot = msg.angular_velocity.x
         # self.row_dot = (self.row - self.row_last) / self.dt
         self.row_last = self.row
+        print(-self.row)
         # self.pitch_dot = (self.pitch - self.pitch_last) / self.dt
         # self.pitch_last = self.pitch
         # self.pitch_dot = msg.angular_velocity.y

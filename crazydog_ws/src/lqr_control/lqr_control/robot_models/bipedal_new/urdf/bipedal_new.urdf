@@ -1,0 +1,670 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="bipedal_new">
+  <link name="dummy_link"/>  
+  <joint name="dummy_joint" type="floating">
+    <parent link="dummy_link"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.05272 0.20013 1.7214E-06"
+        rpy="0 0 0" />
+      <mass
+        value="0.62" />
+      <inertia
+        ixx="0.0014154"
+        ixy="-8.2759E-05"
+        ixz="-1.9968E-08"
+        iyy="0.0023701"
+        iyz="3.238E-09"
+        izz="0.0022774" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.74902 0.74902 0.74902 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="hip_r">
+    <inertial>
+      <origin
+        xyz="0.0032326 -8.9496E-05 0.066165"
+        rpy="0 0 0" />
+      <mass
+        value="0.536" />
+      <inertia
+        ixx="0.00021465"
+        ixy="-2.4475E-07"
+        ixz="-2.2372E-07"
+        iyy="0.00012018"
+        iyz="3.0046E-07"
+        izz="0.00012408" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/hip_r.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.62745 0.62745 0.62745 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/hip_r.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="hip_r"
+    type="fixed">
+    <origin
+      xyz="-0.09755 0.01 0.22494"
+      rpy="1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="hip_r" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="hip1_r">
+    <inertial>
+      <origin
+        xyz="0.050012 -8.4178E-05 0.00066363"
+        rpy="0 0 0" />
+      <mass
+        value="0.573" />
+      <inertia
+        ixx="0.00013072"
+        ixy="3.5562E-07"
+        ixz="-3.3092E-06"
+        iyy="0.00015128"
+        iyz="-2.3793E-07"
+        izz="0.00024737" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/hip1_r.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.62745 0.62745 0.62745 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/hip1_r.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="hip1_r"
+    type="revolute">
+    <origin
+      xyz="0.02195 0 0.06625"
+      rpy="0 0 0" />
+    <parent
+      link="hip_r" />
+    <child
+      link="hip1_r" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="thigh_r">
+    <inertial>
+      <origin
+        xyz="-6.2369E-05 -0.021371 0.039555"
+        rpy="0 0 0" />
+      <mass
+        value="0.9105" />
+      <inertia
+        ixx="0.001452"
+        ixy="1.5255E-08"
+        ixz="-3.236E-07"
+        iyy="0.00038047"
+        iyz="0.00020329"
+        izz="0.0014985" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/thigh_r.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.62745 0.62745 0.62745 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/thigh_r.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="thigh_r"
+    type="revolute">
+    <origin
+      xyz="0.05325 0 0.019903"
+      rpy="0 0 0" />
+    <parent
+      link="hip1_r" />
+    <child
+      link="thigh_r" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="calf_r">
+    <inertial>
+      <origin
+        xyz="1.5223E-05 -0.028045 -0.16158"
+        rpy="0 0 0" />
+      <mass
+        value="0.555" />
+      <inertia
+        ixx="0.001409"
+        ixy="-6.9197E-08"
+        ixz="-1.1379E-06"
+        iyy="0.0014225"
+        iyz="-9.5527E-05"
+        izz="8.2506E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/calf_r.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/calf_r.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="calf_r"
+    type="revolute">
+    <origin
+      xyz="0 -0.215 0.044042"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="thigh_r" />
+    <child
+      link="calf_r" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="wheel_r">
+    <inertial>
+      <origin
+        xyz="2.498E-16 -0.010766 -6.4115E-15"
+        rpy="0 0 0" />
+      <!-- <mass
+        value="0.2805" /> -->
+      <mass
+        value="0." />
+      <inertia
+        ixx="0.00029524"
+        ixy="1.6111E-18"
+        ixz="2.1558E-19"
+        iyy="0.00057738"
+        iyz="-9.0456E-19"
+        izz="0.00029524" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/wheel_r.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.15294 0.15294 0.15294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/wheel_r.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="wheel_r"
+    type="continuous">
+    <origin
+      xyz="0 -0.037855 -0.215"
+      rpy="0 0 0" />
+    <parent
+      link="calf_r" />
+    <child
+      link="wheel_r" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="hip_l">
+    <inertial>
+      <origin
+        xyz="0.0032326 -8.9496E-05 -0.046335"
+        rpy="0 0 0" />
+      <mass
+        value="0.536" />
+      <inertia
+        ixx="0.00021465"
+        ixy="-2.4475E-07"
+        ixz="-2.2372E-07"
+        iyy="0.00012018"
+        iyz="3.0046E-07"
+        izz="0.00012408" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/hip_l.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.62745 0.62745 0.62745 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/hip_l.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="hip_l"
+    type="fixed">
+    <origin
+      xyz="-0.09755 0.01 0.22494"
+      rpy="1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="hip_l" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="hip1_l">
+    <inertial>
+      <origin
+        xyz="0.050012 -8.4172E-05 -0.00066363"
+        rpy="0 0 0" />
+      <mass
+        value="0.573" />
+      <inertia
+        ixx="0.00013072"
+        ixy="3.5551E-07"
+        ixz="3.3093E-06"
+        iyy="0.00015128"
+        iyz="2.3794E-07"
+        izz="0.00024737" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/hip1_l.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.62745 0.62745 0.62745 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/hip1_l.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="hip1_l"
+    type="revolute">
+    <origin
+      xyz="0.02195 0 -0.04625"
+      rpy="0 0 0" />
+    <parent
+      link="hip_l" />
+    <child
+      link="hip1_l" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="thigh_l">
+    <inertial>
+      <origin
+        xyz="-6.2397E-05 -0.021371 -0.039555"
+        rpy="0 0 0" />
+      <mass
+        value="0.9105" />
+      <inertia
+        ixx="0.001452"
+        ixy="1.5171E-08"
+        ixz="3.2362E-07"
+        iyy="0.00038047"
+        iyz="-0.0002033"
+        izz="0.0014985" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/thigh_l.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.62745 0.62745 0.62745 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/thigh_l.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="thigh_l"
+    type="revolute">
+    <origin
+      xyz="0.05325 0 -0.019903"
+      rpy="0 0 0" />
+    <parent
+      link="hip1_l" />
+    <child
+      link="thigh_l" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="calf_l">
+    <inertial>
+      <origin
+        xyz="1.5713E-05 -0.028045 0.16157"
+        rpy="0 0 0" />
+      <mass
+        value="0.555" />
+      <inertia
+        ixx="0.001409"
+        ixy="-7.0302E-08"
+        ixz="1.1423E-06"
+        iyy="0.0014225"
+        iyz="9.5525E-05"
+        izz="8.2518E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/calf_l.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/calf_l.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="calf_l"
+    type="revolute">
+    <origin
+      xyz="0 -0.215 -0.044042"
+      rpy="1.5708 0 0" />
+    <parent
+      link="thigh_l" />
+    <child
+      link="calf_l" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="wheel_l">
+    <inertial>
+      <origin
+        xyz="-1.4919E-16 -0.010766 6.5781E-15"
+        rpy="0 0 0" />
+      <!-- <mass
+        value="0.2805" /> -->
+      <mass
+        value="0." />
+      <inertia
+        ixx="0.00029524"
+        ixy="1.6902E-18"
+        ixz="2.3579E-19"
+        iyy="0.00057738"
+        iyz="7.0857E-19"
+        izz="0.00029524" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/wheel_l.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.15294 0.15294 0.15294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/wheel_l.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="wheel_l"
+    type="continuous">
+    <origin
+      xyz="0 -0.037855 0.215"
+      rpy="0 0 0" />
+    <parent
+      link="calf_l" />
+    <child
+      link="wheel_l" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="battery">
+    <inertial>
+      <origin
+        xyz="-0.0058692 -0.10385 0.017252"
+        rpy="0 0 0" />
+      <mass
+        value="0.672" />
+      <inertia
+        ixx="8.8345E-07"
+        ixy="-1.6203E-13"
+        ixz="7.6432E-10"
+        iyy="8.6395E-07"
+        iyz="-1.7993E-12"
+        izz="5.4571E-08" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/battery.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.24706 0.24706 0.24706 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bipedal_new/meshes/battery.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="battery"
+    type="fixed">
+    <origin
+      xyz="-0.10845 -0.01 0.22594"
+      rpy="1.5708 0 -3.1416" />
+    <parent
+      link="base_link" />
+    <child
+      link="battery" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+</robot>

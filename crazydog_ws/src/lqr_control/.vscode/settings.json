@@ -1,0 +1,16 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/crazydog/crazydog/crazydog_ws/build/robot_interfaces",
+        "/home/crazydog/crazydog/crazydog_ws/install/robot_interfaces/lib/python3.10/site-packages",
+        "/home/crazydog/crazydog/crazydog_ws/install/unitree_msgs/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/crazydog/crazydog/crazydog_ws/build/robot_interfaces",
+        "/home/crazydog/crazydog/crazydog_ws/install/robot_interfaces/lib/python3.10/site-packages",
+        "/home/crazydog/crazydog/crazydog_ws/install/unitree_msgs/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ]
+}

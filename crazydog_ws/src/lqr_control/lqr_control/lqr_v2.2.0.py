@@ -14,13 +14,13 @@ from datetime import datetime
 import os
 from utils import urdf_loader
 
-WHEEL_RADIUS = 0.08     # m
-WHEEL_MASS = 0.695  # kg
+WHEEL_RADIUS = 0.07     # m
+WHEEL_MASS = 0.28  # kg
 WHEEL_DISTANCE = 0.355
 URDF_PATH = "/home/crazydog/crazydog/crazydog_ws/src/lqr_control/lqr_control/robot_models/big bipedal robot v1/urdf/big bipedal robot v1.urdf"
 MID_ANGLE = 0.0   #0.05
 TORQUE_CONSTRAIN = 1.5
-MOTOR_INIT_POS = [None, 0.669, 3.815, None, 1.247+2*math.pi, 2.970]     # for unitree motors
+MOTOR_INIT_POS = [None, 0.669, 1.080, None, 1.247+2*math.pi, 2.320]     # for unitree motors
 INIT_ANGLE = [-2.42, 2.6]
 LOCK_POS = [None, 2.76, 9.88, None, 5.44, -3.10]    # -2.75, 2.0
 THIGH_LENGTH = 0.215
@@ -31,7 +31,7 @@ class robotController():
         rclpy.init()
         # K: [[ 2.97946709e-07  7.36131891e-05 -1.28508761e+01 -4.14185118e-01]]
         Q = np.diag([0., 10., 100., 0.1])       # 1e-9, 0.1, 1.0, 1e-4
-        R = np.diag(np.diag([2.5]))   #0.02
+        R = np.diag(np.diag([2.5]))   #0.02 2.5
         q = np.array([0., 0., 0., 0., 0., 0., 1.,
                             0., -1.18, 2.0, 1., 0.,
                             0., -1.18, 2.0, 1., 0.])
@@ -44,9 +44,9 @@ class robotController():
                                                   urdf=URDF_PATH, 
                                                   wheel_r=WHEEL_RADIUS, 
                                                   M=WHEEL_MASS, Q=Q, R=R, 
-                                                  delta_t=1/250, 
+                                                  delta_t=1/300, 
                                                   show_animation=False,
-                                                  m=mass,
+                                                  m=6.44,
                                                   l_bar=self.l_bar,
                                                   dynamic_K = True,
                                                   max_l=0.46,
@@ -165,7 +165,7 @@ class robotController():
         theta1_err, theta2_err = self.get_angle_error(self.ros_manager.wheel_coordinate)     # lock legs coordinate [x, y] (hip joint coordinate (0.0742, 0))
         self.lqr_controller.change_K(self.l_bar)
         self.startController()
-        time.sleep(0.3)
+        time.sleep(0.4)
         self.set_motor_cmd(motor_number=1, kp=5, kd=0.12, position=MOTOR_INIT_POS[1]-theta1_err*6.33)
         self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
         time.sleep(0.1)
@@ -247,7 +247,7 @@ class robotController():
             if (time.time()-start_time) < 3:
                 yaw_torque = 0.0
             if (time.time()-start_time) > 3:
-                self.calibrate_com()
+                # self.calibrate_com()
                 self.update_pose()
                 self.lqr_controller.change_K(self.l_bar)
             motor_command_left = U[0, 0] + yaw_torque

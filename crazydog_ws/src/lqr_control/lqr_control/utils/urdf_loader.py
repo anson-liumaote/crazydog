@@ -64,15 +64,17 @@ class loadRobotModel():
         wheel_mass = 0
         body_mass = 0
         for name, inertia, oMi in zip(self.model.names, self.model.inertias, self.data.oMi):
-            if name=='wheel_joint_right' or name=='wheel_joint_left':
-                wheel_mass += inertia.mass
-            else:
-                body_mass += inertia.mass
+            # if name=='wheel_joint_right' or name=='wheel_joint_left':
+            #     wheel_mass += inertia.mass
+            # else:
+            body_mass += inertia.mass
         return body_mass
     
     def getOmi(self):
         for name, oMi in zip(self.model.names, self.data.oMi):
             if name=='wheel4' or name=='wheel04':
+                return oMi.translation[0]
+            elif name=='wheel_r' or name=='wheel_l':
                 return oMi.translation[0]
     
 

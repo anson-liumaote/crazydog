@@ -12,7 +12,7 @@ from rclpy.node import Node
 from unitree_msgs.msg import LowCommand, LowState, MotorCommand, MotorState
 from std_msgs.msg import Float32MultiArray
 
-MOTOR_INIT_POS = [None, 0.669, 3.815, None, 1.247+2*math.pi, 2.970]
+MOTOR_INIT_POS = [None, 0.669, 1.080, None, 1.247+2*math.pi, 2.320]
 
 class unitree_communication(object):
     def __init__(self,device_name = '/dev/ttyUSB0'):

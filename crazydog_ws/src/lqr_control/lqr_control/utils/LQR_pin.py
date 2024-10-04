@@ -75,7 +75,7 @@ class InvertedPendulumLQR:
         self.l_bar = l
         index = int((self.l_bar-self.min_l)/self.slice_w)
         self.K = self.K_list[index]
-        print('K change to:', self.K)
+        # print('K change to:', self.K)
 
 
     def solve_DARE(self, A, B, Q, R, maxiter=150, eps=0.01):

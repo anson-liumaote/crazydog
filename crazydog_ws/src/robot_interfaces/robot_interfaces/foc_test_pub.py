@@ -16,7 +16,7 @@ class MinimalPublisher(Node):
     def timer_callback(self):
         msg = Float32MultiArray()
         # msg.data = 'Hello World: %d' % self.i
-        msg.data = [1.0, -1.0]
+        msg.data = [5.0, -5.0]
         self.publisher_.publish(msg)
         self.get_logger().info('Publishing: "%s"' % msg.data)
         # self.i += 1
