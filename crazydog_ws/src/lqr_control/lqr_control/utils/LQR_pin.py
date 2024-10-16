@@ -25,7 +25,8 @@ class InvertedPendulumLQR:
                  dynamic_K=False, 
                  max_l=None, 
                  min_l=None,
-                 slice_w=None):    
+                 slice_w=None,
+                 advance_lqr_K=None):    
     # transform isaac sim angle to com.py angle
         if l_bar is None:
             print('old loading type')
@@ -46,7 +47,7 @@ class InvertedPendulumLQR:
         self.wheel_r = wheel_r
         self.Q = Q #if Q is not None else np.diag([0, 1.5, 150.0, 100.0])  # state cost matrix , best in IsaacSim
         self.R = R #if R is not None else np.diag([1e-6])  # input cost matrix
-
+        self.adv_k = advance_lqr_K
         self.delta_t = delta_t  # time tick [s]
         
         if dynamic_K == False:
@@ -75,7 +76,7 @@ class InvertedPendulumLQR:
         self.l_bar = l
         index = int((self.l_bar-self.min_l)/self.slice_w)
         self.K = self.K_list[index]
-        # print('K change to:', self.K)
+        print('K change to:', self.K)
 
 
     def solve_DARE(self, A, B, Q, R, maxiter=150, eps=0.01):
@@ -114,6 +115,13 @@ class InvertedPendulumLQR:
         u = -self.K @ (x - x_desire)
         # elapsed_time = time.time() - start
         # print(f"calc time:{elapsed_time:.6f} [sec]")
+        return u
+    
+    def advance_lqr_control(self, x, x_desire):
+    
+        start = time.time()
+        u = -self.adv_k @ (x - x_desire)
+
         return u
 
     def get_model_matrix(self):

@@ -6,7 +6,6 @@ import threading
 import math
 from sensor_msgs.msg import Imu
 from std_msgs.msg import String
-import unitree_motor_command as um
 from unitree_msgs.msg import LowCommand, LowState, MotorCommand, MotorState
 import time
 
@@ -95,7 +94,7 @@ class RosTopicManager(Node):
         self.row_dot = msg.angular_velocity.x
         # self.row_dot = (self.row - self.row_last) / self.dt
         self.row_last = self.row
-        print(-self.row)
+        # print(-self.row)
         # self.pitch_dot = (self.pitch - self.pitch_last) / self.dt
         # self.pitch_last = self.pitch
         # self.pitch_dot = msg.angular_velocity.y

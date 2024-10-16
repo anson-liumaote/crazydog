@@ -8,7 +8,6 @@ from utils.pid import PID
 from utils.ros_manager import RosTopicManager
 # from utils.motor_getready import disableUnitreeMotor, init_unitree_motor, locklegs, enable
 from unitree_msgs.msg import LowCommand, LowState, MotorCommand, MotorState
-import unitree_motor_command as um
 import pickle
 from datetime import datetime
 import os

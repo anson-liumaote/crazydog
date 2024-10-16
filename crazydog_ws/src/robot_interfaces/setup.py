@@ -29,6 +29,7 @@ setup(
             'imu_data_pub = robot_interfaces.imu_data_pub:main',
             'joy_controller = robot_interfaces.joy_controller:main',
             'unitree_pubsub = robot_interfaces.unitree_pubsub:main',
+            'odom_pub = robot_interfaces.odom_pub:main',
         ],
     },
 )
