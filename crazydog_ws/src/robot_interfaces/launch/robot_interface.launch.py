@@ -1,6 +1,7 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
+
 def generate_launch_description():
     return LaunchDescription([
         Node(
@@ -34,8 +35,8 @@ def generate_launch_description():
             name='unitree_pubsub'
         ),
         Node(
-            package='robot_interfaces',
-            executable='odom_pub',
-            name='odom_pub'
+           package='robot_interfaces',
+           executable='odom_pub',
+           name='odom_pub'
         ),
     ])

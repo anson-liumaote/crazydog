@@ -57,6 +57,8 @@ class RosTopicManager(Node):
 
     def status_callback(self, msg_list):
         self.motor_states = msg_list.motor_state
+        with self.ctrl_condition:
+            self.ctrl_condition.notify()
 
     def foc_callback(self, msg):
         if msg.data[0] == 513.:   # motor left
@@ -98,8 +100,7 @@ class RosTopicManager(Node):
         # self.pitch_dot = (self.pitch - self.pitch_last) / self.dt
         # self.pitch_last = self.pitch
         # self.pitch_dot = msg.angular_velocity.y
-        with self.ctrl_condition:
-            self.ctrl_condition.notify()
+        
 
     def get_orientation(self):
         return -self.row, -self.row_dot

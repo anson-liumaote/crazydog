@@ -20,7 +20,7 @@ class unitree_communication(object):
     def __init__(self,device_name = '/dev/ttyUSB0'):
         self.serial = SerialPort(device_name)
         self.motors = []
-        self.runing_flag = False
+        # self.runing_flag = False
 
     def createMotor(self,motor_number = 0,MAX = 0,MIN = 0,initalposition = 0):
         if motor_number not in [motor.id for motor in self.motors]:
@@ -34,52 +34,52 @@ class unitree_communication(object):
                 if motor.cmd.id == motor_number:
                     return motor
 
-    def inital_check(self):
-        if self.runing_flag:
-            for motor in self.motors:
+    # def inital_check(self):
+    #     if self.runing_flag:
+    #         for motor in self.motors:
                 
-                if motor.inital_position_max >= motor.data.q and motor.data.q >= motor.inital_position_min:
-                    motor.cmd.mode = queryMotorMode(MotorType.GO_M8010_6,MotorMode.FOC)
-                    motor.cmd.q    = motor.data.q
-                    motor.cmd.dq   = 0
-                    motor.cmd.kp   = 6.0
-                    motor.cmd.kd   = 0.1
-                    motor.cmd.tau  = 0.0
-                    # motor.inital_position = motor.data.q
-                    # motor.max_position = motor.inital_position + motor.max
-                    # motor.min_position = motor.inital_position + motor.min
+    #             if motor.inital_position_max >= motor.data.q and motor.data.q >= motor.inital_position_min:
+    #                 motor.cmd.mode = queryMotorMode(MotorType.GO_M8010_6,MotorMode.FOC)
+    #                 motor.cmd.q    = motor.data.q
+    #                 motor.cmd.dq   = 0
+    #                 motor.cmd.kp   = 6.0
+    #                 motor.cmd.kd   = 0.1
+    #                 motor.cmd.tau  = 0.0
+    #                 # motor.inital_position = motor.data.q
+    #                 # motor.max_position = motor.inital_position + motor.max
+    #                 # motor.min_position = motor.inital_position + motor.min
 
-                else:
-                    print("motor {0} inital motor failed".format(motor.cmd.id))
-                    motor.cmd.mode = queryMotorMode(MotorType.GO_M8010_6,MotorMode.FOC)
-                    motor.cmd.q    = 0
-                    motor.cmd.dq   = 0
-                    motor.cmd.kp   = 0
-                    motor.cmd.kd   = 0
-                    motor.cmd.tau  = 0
-        else:
-            print("thread didn't start")
+    #             else:
+    #                 print("motor {0} inital motor failed".format(motor.cmd.id))
+    #                 motor.cmd.mode = queryMotorMode(MotorType.GO_M8010_6,MotorMode.FOC)
+    #                 motor.cmd.q    = 0
+    #                 motor.cmd.dq   = 0
+    #                 motor.cmd.kp   = 0
+    #                 motor.cmd.kd   = 0
+    #                 motor.cmd.tau  = 0
+    #     else:
+    #         print("thread didn't start")
 
-    def disableallmotor(self):
-        for motor in self.motors:
-            motor.cmd.mode = queryMotorMode(MotorType.GO_M8010_6,MotorMode.FOC)
-            motor.cmd.q    = 0.0
-            motor.cmd.dq   = 0
-            motor.cmd.kp   = 0.0
-            motor.cmd.kd   = 0.06
-            motor.cmd.tau  = 0.0
-        time.sleep(0.01)
-        self.runing_flag = False
+    # def disableallmotor(self):
+    #     for motor in self.motors:
+    #         motor.cmd.mode = queryMotorMode(MotorType.GO_M8010_6,MotorMode.FOC)
+    #         motor.cmd.q    = 0.0
+    #         motor.cmd.dq   = 0
+    #         motor.cmd.kp   = 0.0
+    #         motor.cmd.kd   = 0.06
+    #         motor.cmd.tau  = 0.0
+    #     time.sleep(0.01)
+    #     self.runing_flag = False
 
-    def calibrate_all_motor(self):
-        if self.runing_flag == False:
-            for motor in self.motors:
-                motor.cmd.mode = queryMotorMode(MotorType.GO_M8010_6,MotorMode.CALIBRATE)
-            for motor in self.motors:
-                self.serial.sendRecv(motor.cmd, motor.data)
-                time.sleep(6)  
-        else:
-            print("system still runing can't calibrate")
+    # def calibrate_all_motor(self):
+    #     if self.runing_flag == False:
+    #         for motor in self.motors:
+    #             motor.cmd.mode = queryMotorMode(MotorType.GO_M8010_6,MotorMode.CALIBRATE)
+    #         for motor in self.motors:
+    #             self.serial.sendRecv(motor.cmd, motor.data)
+    #             time.sleep(6)  
+    #     else:
+    #         print("system still runing can't calibrate")
 
     def position_force_velocity_cmd(self,motor_number=0,torque=0,kp=0,kd=0,position=0,velocity=0):
         for motor in self.motors:
@@ -95,7 +95,7 @@ class unitree_communication(object):
         for motor in self.motors:
             if motor.max_position>=motor.data.q and motor.data.q>=motor.min_position:
                 self.serial.sendRecv(motor.cmd, motor.data)
-                # time.sleep(0.001)
+                # time.sleep(0.1)
             else:
                 print("motor {0} out off constrant".format(motor.cmd.id))
                 print(motor.max_position, motor.data.q, motor.min_position)
@@ -107,14 +107,6 @@ class unitree_communication(object):
                 motor.cmd.tau  = 0
                 self.serial.sendRecv(motor.cmd, motor.data)
                 # time.sleep(0.0006)
-
-    # def get_motor_status(self, motor_number):
-    #     for motor in self.motors:
-    #         if motor.id == motor_number:
-    #             q = motor.data.q
-    #             dq = motor.data.dq
-    #             temp = motor.data.temp
-    #             return q, dq, temp
 
     def enableallmotor(self):       
         for motor in self.motors:
@@ -185,7 +177,6 @@ class UnitreeInterface(Node):
         self.jointstate_msg.position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.jointstate_msg.velocity = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-
     def command_callback(self, msg):
         for id, cmd in enumerate(msg.motor_cmd):
             motor_number = id
@@ -198,6 +189,7 @@ class UnitreeInterface(Node):
             self.unitree2.position_force_velocity_cmd(motor_number, torque, kp, kd, position, velocity)
 
     def foc_status_callback(self, msg):
+        self.jointstate_msg.header.stamp = self.get_clock().now().to_msg()
         if msg.data[0] == 513.:   # motor left
             self.jointstate_msg.position[6] = -msg.data[1]
             self.jointstate_msg.velocity[6] = -msg.data[2] * WHEEL_RADIUS * (2 * math.pi / 60)
@@ -209,6 +201,7 @@ class UnitreeInterface(Node):
         self.unitree.motor_sendRecv()
         self.unitree2.motor_sendRecv()
         msg_list = LowState()
+        self.jointstate_msg.header.stamp = self.get_clock().now().to_msg()
         
         for motor in self.unitree.motors:
             msg = MotorState()

@@ -41,8 +41,11 @@ class OdometryNode(Node):
         self.jointstate = msg
 
     def imu_callback(self, msg):
-        v_left, v_right = self.jointstate.velocity[6], self.jointstate.velocity[7]
-        self.publish_odometry(v_left, v_right, msg)
+        try:
+            v_left, v_right = self.jointstate.velocity[6], self.jointstate.velocity[7]
+            self.publish_odometry(v_left, v_right, msg)
+        except:
+            self.get_logger().info('waiting for jointstate')
 
     def rpm_to_mps(self, rpm):
         """Convert RPM to meters per second."""

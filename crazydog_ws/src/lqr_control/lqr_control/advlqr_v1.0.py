@@ -34,8 +34,8 @@ class robotController():
         q = np.array([0., 0., 0., 0., 0., 0., 1.,
                             0., -1.18, 2.0, 1., 0.,
                             0., -1.18, 2.0, 1., 0.])
-        adva_k = np.array([[-7.6774 ,-0.924 ,-1.3968 ,-1.7362 ,4.5692 ,0.6881],
-                          [6.1060  ,0.2775  ,1.0380  ,1.1057 ,15.9314  ,0.8999]])
+        adva_k = np.array([[-6.3641 ,-0.6496 ,-0.3503 ,-0.7082 ,2.9281 ,0.4571],
+                          [4.0263  ,-0.0470 ,-0.0153  ,-0.0681 ,7.8724  ,0.7800]])
         self.robot = urdf_loader.loadRobotModel(urdf_path=URDF_PATH)
         self.robot.pos = q
         self.com, self.l_bar = self.robot.calculateCom(plot=False)
@@ -162,6 +162,7 @@ class robotController():
             self.set_motor_cmd(motor_number=5, kp=i, kd=0.15, position=MOTOR_INIT_POS[5]+theta2_err*6.33*1.6)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.01)
+        
     
     def standup(self):
         self.ros_manager.wheel_coordinate = [0.0348784-0.0752, -0.10413465]
@@ -199,7 +200,7 @@ class robotController():
     def startadvaController(self):
         self.advalqr_thread = threading.Thread(target=self.adva_controller)
         if self.running_flag == True:
-            self.running_flag == False
+            self.running_flag = False
         self.adva_running_flag = True
         self.advalqr_thread.start()
 
@@ -219,18 +220,18 @@ class robotController():
         U = np.zeros((2, 2))
         X_ref = np.zeros((6, 2))
         t0 = time.time()
-        leg_bias = 0.3
-
-        self.set_motor_cmd(motor_number=4,torque=0)
-        self.set_motor_cmd(motor_number=1,torque=0)
-        self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-
+        leg_bias = 0.1
+        
+        # self.set_motor_cmd(motor_number=4,torque=0)
+        # self.set_motor_cmd(motor_number=1,torque=0)
+        # self.ros_manager.motor_cmd_pub.publish(self.cmd_list)       
         while self.adva_running_flag==True and self.running_flag==False:
             with self.ros_manager.ctrl_condition:
                 self.ros_manager.ctrl_condition.wait()
             t1 = time.time()
             dt = t1 - t0
             t0 = t1
+            print(1/dt)
             X_last = np.copy(X)
             foc_status_left, foc_status_right = self.ros_manager.get_foc_status()
             
@@ -242,24 +243,24 @@ class robotController():
             X[4, 0], X[5, 0] = self.ros_manager.get_orientation()
             X[4, 1], X[5, 1] = -X[4, 1], -X[5, 1]
             X[4, 0], X[5, 0] = X[4, 1], X[5, 1]
-            X[0, 0] = (12.786 - self.ros_manager.motor_states[4].q)/6.33 - math.radians(60)-X[4, 0]
-            X[0, 1] = -(-4.486 - self.ros_manager.motor_states[1].q)/6.33 - math.radians(60)-X[4, 0]
+            X[0, 0] = (12.786 - self.ros_manager.motor_states[4].q) - math.radians(60)-X[4, 0]-leg_bias
+            X[0, 1] = -(-4.486 - self.ros_manager.motor_states[1].q) - math.radians(60)-X[4, 0]-leg_bias
             X[1, 0] = self.ros_manager.motor_states[4].dq
             X[1, 1] = self.ros_manager.motor_states[1].dq
             print(X[0, 0],X[0, 1])
             
             
-            if abs(X[4, 0]) > math.radians(20) or abs(X[0, 0]) > math.radians(15) or abs(X[0, 1]) > math.radians(15):     # constrain
-                # U[0, 0] = 0.0
-                # print(X[0,0],X[0,1])
-                self.set_motor_cmd(motor_number=4,torque=0)
-                self.set_motor_cmd(motor_number=1,torque=0)
-                self.ros_manager.send_foc_command(0.0, 0.0)
-                # self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-                continue
+            # if abs(X[4, 0]) > math.radians(20) or abs(X[0, 0]) > math.radians(15) or abs(X[0, 1]) > math.radians(15):     # constrain
+            #     # U[0, 0] = 0.0
+            #     # print(X[0,0],X[0,1])
+            #     self.set_motor_cmd(motor_number=4,torque=0)
+            #     self.set_motor_cmd(motor_number=1,torque=0)
+            #     self.ros_manager.send_foc_command(0.0, 0.0)
+            #     self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+            #     continue
 
             U = np.copy(self.lqr_controller.advance_lqr_control(X,X_ref))
-            # print(U[0,0],U[0,1],U[1,0],U[1,1])
+            print(U[0,0],U[0,1],U[1,0],U[1,1])
 
             motor_command_right = U[0,0]
             motor_command_left = U[0,1]
@@ -271,8 +272,8 @@ class robotController():
             thigh_command_right = max(-1.5, min(thigh_command_right, 1.5))
             thigh_command_left = max(-1.5, min(thigh_command_left, 1.5))
 
-            # self.set_motor_cmd(motor_number=4,torque=thigh_command_right)
-            # self.set_motor_cmd(motor_number=1,torque=thigh_command_left)
+            # self.set_motor_cmd(motor_number=4,torque=thigh_command_right/6.33)
+            # self.set_motor_cmd(motor_number=1,torque=thigh_command_left/6.33)
             
             # self.ros_manager.send_foc_command(motor_command_left , motor_command_right)
             # self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
@@ -292,6 +293,7 @@ class robotController():
         while self.running_flag==True and self.adva_running_flag==False:
             with self.ros_manager.ctrl_condition:
                 self.ros_manager.ctrl_condition.wait()
+            
             t1 = time.time()
             dt = t1 - t0
             t0 = t1
