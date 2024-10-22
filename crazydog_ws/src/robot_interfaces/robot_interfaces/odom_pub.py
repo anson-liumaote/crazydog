@@ -7,6 +7,7 @@ from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float32MultiArray
 from sensor_msgs.msg import JointState
+from scipy.spatial.transform import Rotation as R
 
 WHEEL_RADIUS = 0.07     # m
 WHEEL_DISTANCE = 0.355
@@ -50,8 +51,19 @@ class OdometryNode(Node):
     def rpm_to_mps(self, rpm):
         """Convert RPM to meters per second."""
         return rpm * self.wheel_radius * (2 * math.pi / 60)
+    
+    def rotate_quaternion_90_ccw_z(self, quat):
+        # Quaternion for 90-degree CCW rotation around Z-axis [x, y, z, w]
+        z_rotation_quat = R.from_euler('z', 90, degrees=True).as_quat()
 
-    def publish_odometry(self, v_left, v_right, imu_msg):
+        # Combine the input quaternion with the Z rotation
+        input_rotation = R.from_quat(quat)
+        rotated = R.from_quat(z_rotation_quat) * input_rotation
+
+        # Return the rotated quaternion as [x, y, z, w]
+        return rotated.as_quat()
+
+    def publish_odometry(self, v_left, v_right, imu_msg: Imu):
         # """Publish odometry based on left and right RPM."""
         # v_left = self.rpm_to_mps(rpm_left)
         # v_right = self.rpm_to_mps(rpm_right)
@@ -78,25 +90,16 @@ class OdometryNode(Node):
         odom_msg.pose.pose.position.y = self.y
         odom_msg.pose.pose.position.z = 0.0
 
-        odom_msg.pose.pose.orientation = imu_msg.orientation
+        imu_orientation = [imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w] 
+        odom_msg.pose.pose.orientation.x, odom_msg.pose.pose.orientation.y, odom_msg.pose.pose.orientation.z, odom_msg.pose.pose.orientation.w = self.rotate_quaternion_90_ccw_z(imu_orientation)
         # odom_msg.pose.pose.orientation = self.quaternion_from_euler(0, 0, self.theta)
 
         odom_msg.twist.twist = Twist()
         odom_msg.twist.twist.linear.x = v_avg
         odom_msg.twist.twist.angular.z = omega
+        odom_msg.twist.twist.angular.y = imu_msg.angular_velocity.y     # !!! check according to imu pos
 
         self.odom_pub.publish(odom_msg)
-
-    # def quaternion_from_euler(self, roll, pitch, yaw):
-    #     """Convert Euler angles to a quaternion."""
-    #     qx = math.sin(roll/2) * math.cos(pitch/2) * math.cos(yaw/2) - math.cos(roll/2) * math.sin(pitch/2) * math.sin(yaw/2)
-    #     qy = math.cos(roll/2) * math.sin(pitch/2) * math.cos(yaw/2) + math.sin(roll/2) * math.cos(pitch/2) * math.sin(yaw/2)
-    #     qz = math.cos(roll/2) * math.cos(pitch/2) * math.sin(yaw/2) - math.sin(roll/2) * math.sin(pitch/2) * math.cos(yaw/2)
-    #     qw = math.cos(roll/2) * math.cos(pitch/2) * math.cos(yaw/2) + math.sin(roll/2) * math.sin(pitch/2) * math.sin(yaw/2)
-    #     return (qx, qy, qz, qw)
-
-    
-
 
 def main(args=None):
     rclpy.init(args=args)

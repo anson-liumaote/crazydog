@@ -13,7 +13,10 @@ from unitree_msgs.msg import LowCommand, LowState, MotorCommand, MotorState
 from std_msgs.msg import Float32MultiArray
 from sensor_msgs.msg import JointState
 
-MOTOR_INIT_POS = [None, 0.669, 1.080, None, 1.247+2*math.pi, 2.320]
+MOTOR_INIT_POS = [None, 0.669, 1.1, None, 7.5302, 2.2]
+
+MOTOR_ORIGIN_POS = [None, -4.6, 27.8, None, 12.8, -24.4, 0.0, 0.0]
+SCALE = [None, 6.33, 6.33*1.6, None, 6.33, 6.33*1.6, 1.0, 1.0]
 WHEEL_RADIUS = 0.07     # m
 
 class unitree_communication(object):
@@ -88,7 +91,7 @@ class unitree_communication(object):
                 motor.cmd.tau = torque
                 motor.cmd.kp = kp
                 motor.cmd.kd = kd
-                motor.cmd.q = position
+                motor.cmd.q = position  
                 motor.cmd.dq = velocity*queryGearRatio(MotorType.GO_M8010_6)
             
     def motor_sendRecv(self):
@@ -188,7 +191,7 @@ class UnitreeInterface(Node):
             self.unitree.position_force_velocity_cmd(motor_number, torque, kp, kd, position, velocity)
             self.unitree2.position_force_velocity_cmd(motor_number, torque, kp, kd, position, velocity)
 
-    def foc_status_callback(self, msg):
+    def foc_status_callback(self, msg: Float32MultiArray):
         self.jointstate_msg.header.stamp = self.get_clock().now().to_msg()
         if msg.data[0] == 513.:   # motor left
             self.jointstate_msg.position[6] = -msg.data[1]
@@ -196,6 +199,7 @@ class UnitreeInterface(Node):
         elif msg.data[0] == 514.: # motor right
             self.jointstate_msg.position[7] = msg.data[1]
             self.jointstate_msg.velocity[7] = msg.data[2] * WHEEL_RADIUS * (2 * math.pi / 60)
+        self.jointstate_pub.publish(self.jointstate_msg)
 
     def recv_timer_callback(self):
         self.unitree.motor_sendRecv()
@@ -222,9 +226,14 @@ class UnitreeInterface(Node):
             self.jointstate_msg.position[id] = float(motor.data.q)
             self.jointstate_msg.velocity[id] = float(motor.data.dq)
         self.status_pub.publish(msg_list)
+        self.jointstate_msg = self.scaling(self.jointstate_msg)
         self.jointstate_pub.publish(self.jointstate_msg)
-
-
+    
+    def scaling(self, states: JointState):
+        states.position = [(state-org)/scale for state, scale, org in zip(states.position, SCALE, MOTOR_ORIGIN_POS)]
+        states.velocity = [state/scale for state, scale in zip(states.velocity, SCALE)]
+        return states
+    
 def main(args=None):
     rclpy.init(args=args)
 
