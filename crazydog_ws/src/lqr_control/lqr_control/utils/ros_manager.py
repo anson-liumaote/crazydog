@@ -16,8 +16,8 @@ INIT_JOINT_POS = []
 class RosManager(Node):
     def __init__(self):
         super().__init__('ros_topic_manager')
-        self.foc_data_subscriber = self.create_subscription(Float32MultiArray,'foc_msg', self.foc_callback, 1)
-        self.imu_subscriber = self.create_subscription(Imu,'handsfree/imu', self.imu_callback, 5)
+        # self.foc_data_subscriber = self.create_subscription(Float32MultiArray,'foc_msg', self.foc_callback, 1)
+        # self.imu_subscriber = self.create_subscription(Imu,'handsfree/imu', self.imu_callback, 5)
         self.vel_subscriber = self.create_subscription(Twist,'cmd_vel', self.vel_callback, 1)
         self.vel_subscriber = self.create_subscription(String,'body_pose', self.body_pose_callback, 1)
         self.jointstate_subscriber = self.create_subscription(JointState,'jointstate', self.jointstate_callback, 1)
@@ -67,6 +67,9 @@ class RosManager(Node):
     def vel_callback(self, msg: Twist):
         self.joy_linear_vel = msg.linear.x
         self.joy_angular_vel = msg.angular.z
+
+    def status_callback(self, msg_list: LowState):
+        self.motor_states = msg_list.motor_state
     
     def send_foc_command(self, current_left, current_right):
         msg = Float32MultiArray()
@@ -105,7 +108,7 @@ class RosManager(Node):
         return yaw, self.odom.twist.twist.angular.z
     
     def get_joy_vel(self):
-        return self.joy_linear_vel, -self.joy_angular_vel
+        return self.joy_linear_vel, self.joy_angular_vel
     
     def get_linear_vel_x(self):
         return self.odom.twist.twist.linear.x
@@ -114,12 +117,6 @@ class RosManager(Node):
         return self.odom.pose.pose.position.x
 
     def euler_from_quaternion(self, x, y, z, w):
-        """
-        Convert a quaternion into euler angles (roll, pitch, yaw)
-        roll is rotation around x in radians (counterclockwise)
-        pitch is rotation around y in radians (counterclockwise)
-        yaw is rotation around z in radians (counterclockwise)
-        """
         t0 = +2.0 * (w * x + y * z)
         t1 = +1.0 - 2.0 * (x * x + y * y)
         roll_x = math.atan2(t0, t1)

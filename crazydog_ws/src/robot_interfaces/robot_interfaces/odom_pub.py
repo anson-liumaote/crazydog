@@ -8,6 +8,7 @@ from nav_msgs.msg import Odometry
 from std_msgs.msg import Float32MultiArray
 from sensor_msgs.msg import JointState
 from scipy.spatial.transform import Rotation as R
+import numpy as np
 
 WHEEL_RADIUS = 0.07     # m
 WHEEL_DISTANCE = 0.355
@@ -33,8 +34,8 @@ class OdometryNode(Node):
         self.theta = 0.0  # Orientation
 
         self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
-        self.imu_subscriber = self.create_subscription(Imu, '/handsfree/imu', self.imu_callback, 10)
-        self.jointstate_subscriber = self.create_subscription(JointState,'jointstate', self.jointstate_callback, 1)
+        self.imu_subscriber = self.create_subscription(Imu, '/handsfree/imu', self.imu_callback, 5)
+        self.jointstate_subscriber = self.create_subscription(JointState,'jointstate', self.jointstate_callback, 5)
         self.last_time = self.get_clock().now()
         # self.timer = self.create_timer(0.1, self.timer_callback)  # 10 Hz
 
@@ -45,23 +46,54 @@ class OdometryNode(Node):
         try:
             v_left, v_right = self.jointstate.velocity[6], self.jointstate.velocity[7]
             self.publish_odometry(v_left, v_right, msg)
-        except:
-            self.get_logger().info('waiting for jointstate')
+        except Exception as e:
+            self.get_logger().warning(f'{e}')
 
     def rpm_to_mps(self, rpm):
         """Convert RPM to meters per second."""
         return rpm * self.wheel_radius * (2 * math.pi / 60)
+
+    def quaternion_multiply(self, q1, q2):
+        # 四元數乘法
+        x1, y1, z1, w1 = q1
+        x2, y2, z2, w2 = q2
+        return (
+            w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2,
+            w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2,
+            w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2,
+            w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2,
+        )
+
+    def rotate_quaternion_90_z(self, q):
+        r, p, y = self.euler_from_quaternion(q[0], q[1], q[2], q[3])
+        rn = p
+        pn = -r 
+        yn = y + np.pi/2
+        qn = self.get_quaternion_from_euler(rn, pn, yn)
+        return qn
     
-    def rotate_quaternion_90_ccw_z(self, quat):
-        # Quaternion for 90-degree CCW rotation around Z-axis [x, y, z, w]
-        z_rotation_quat = R.from_euler('z', 90, degrees=True).as_quat()
+    def euler_from_quaternion(self, x, y, z, w):
+        t0 = +2.0 * (w * x + y * z)
+        t1 = +1.0 - 2.0 * (x * x + y * y)
+        roll_x = math.atan2(t0, t1)
+     
+        t2 = +2.0 * (w * y - z * x)
+        t2 = +1.0 if t2 > +1.0 else t2
+        t2 = -1.0 if t2 < -1.0 else t2
+        pitch_y = math.asin(t2)
+     
+        t3 = +2.0 * (w * z + x * y)
+        t4 = +1.0 - 2.0 * (y * y + z * z)
+        yaw_z = math.atan2(t3, t4)
+     
+        return roll_x, pitch_y, yaw_z # in radians
 
-        # Combine the input quaternion with the Z rotation
-        input_rotation = R.from_quat(quat)
-        rotated = R.from_quat(z_rotation_quat) * input_rotation
-
-        # Return the rotated quaternion as [x, y, z, w]
-        return rotated.as_quat()
+    def get_quaternion_from_euler(self, roll, pitch, yaw):
+        qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+        qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+        qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+        qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+        return [qx, qy, qz, qw]
 
     def publish_odometry(self, v_left, v_right, imu_msg: Imu):
         # """Publish odometry based on left and right RPM."""
@@ -90,14 +122,16 @@ class OdometryNode(Node):
         odom_msg.pose.pose.position.y = self.y
         odom_msg.pose.pose.position.z = 0.0
 
-        imu_orientation = [imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w] 
-        odom_msg.pose.pose.orientation.x, odom_msg.pose.pose.orientation.y, odom_msg.pose.pose.orientation.z, odom_msg.pose.pose.orientation.w = self.rotate_quaternion_90_ccw_z(imu_orientation)
-        # odom_msg.pose.pose.orientation = self.quaternion_from_euler(0, 0, self.theta)
+        imu_orientation = [imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w]
 
+        [odom_msg.pose.pose.orientation.x, odom_msg.pose.pose.orientation.y, \
+            odom_msg.pose.pose.orientation.z, odom_msg.pose.pose.orientation.w] = \
+                self.rotate_quaternion_90_z(imu_orientation)
+        
         odom_msg.twist.twist = Twist()
         odom_msg.twist.twist.linear.x = v_avg
         odom_msg.twist.twist.angular.z = omega
-        odom_msg.twist.twist.angular.y = imu_msg.angular_velocity.y     # !!! check according to imu pos
+        odom_msg.twist.twist.angular.y = -imu_msg.angular_velocity.x     # !!! check according to imu pos
 
         self.odom_pub.publish(odom_msg)
 

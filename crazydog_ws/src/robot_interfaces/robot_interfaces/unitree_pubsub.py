@@ -15,8 +15,8 @@ from sensor_msgs.msg import JointState
 
 MOTOR_INIT_POS = [None, 0.669, 1.1, None, 7.5302, 2.2]
 
-MOTOR_ORIGIN_POS = [None, -4.6, 27.8, None, 12.8, -24.4, 0.0, 0.0]
-SCALE = [None, 6.33, 6.33*1.6, None, 6.33, 6.33*1.6, 1.0, 1.0]
+MOTOR_ORIGIN_POS = [0.0, -4.6, 27.8, 0.0, 12.8, -24.4, 0.0, 0.0]
+SCALE = [6.33, 6.33, 6.33*1.6, 6.33, -6.33, -6.33*1.6, 1.0, 1.0]
 WHEEL_RADIUS = 0.07     # m
 
 class unitree_communication(object):
@@ -25,9 +25,9 @@ class unitree_communication(object):
         self.motors = []
         # self.runing_flag = False
 
-    def createMotor(self,motor_number = 0,MAX = 0,MIN = 0,initalposition = 0):
+    def createMotor(self, motor_number=None, MAX=None, MIN=None):
         if motor_number not in [motor.id for motor in self.motors]:
-            motor = unitree_motor(motor_number, MAX_degree=MAX, MIN_degree=MIN, inital_position_check=initalposition)
+            motor = unitree_motor(motor_number, MAX_degree=MAX, MIN_degree=MIN)
             self.motors.append(motor)
             return motor                              
 
@@ -36,53 +36,6 @@ class unitree_communication(object):
             for motor in self.motors:
                 if motor.cmd.id == motor_number:
                     return motor
-
-    # def inital_check(self):
-    #     if self.runing_flag:
-    #         for motor in self.motors:
-                
-    #             if motor.inital_position_max >= motor.data.q and motor.data.q >= motor.inital_position_min:
-    #                 motor.cmd.mode = queryMotorMode(MotorType.GO_M8010_6,MotorMode.FOC)
-    #                 motor.cmd.q    = motor.data.q
-    #                 motor.cmd.dq   = 0
-    #                 motor.cmd.kp   = 6.0
-    #                 motor.cmd.kd   = 0.1
-    #                 motor.cmd.tau  = 0.0
-    #                 # motor.inital_position = motor.data.q
-    #                 # motor.max_position = motor.inital_position + motor.max
-    #                 # motor.min_position = motor.inital_position + motor.min
-
-    #             else:
-    #                 print("motor {0} inital motor failed".format(motor.cmd.id))
-    #                 motor.cmd.mode = queryMotorMode(MotorType.GO_M8010_6,MotorMode.FOC)
-    #                 motor.cmd.q    = 0
-    #                 motor.cmd.dq   = 0
-    #                 motor.cmd.kp   = 0
-    #                 motor.cmd.kd   = 0
-    #                 motor.cmd.tau  = 0
-    #     else:
-    #         print("thread didn't start")
-
-    # def disableallmotor(self):
-    #     for motor in self.motors:
-    #         motor.cmd.mode = queryMotorMode(MotorType.GO_M8010_6,MotorMode.FOC)
-    #         motor.cmd.q    = 0.0
-    #         motor.cmd.dq   = 0
-    #         motor.cmd.kp   = 0.0
-    #         motor.cmd.kd   = 0.06
-    #         motor.cmd.tau  = 0.0
-    #     time.sleep(0.01)
-    #     self.runing_flag = False
-
-    # def calibrate_all_motor(self):
-    #     if self.runing_flag == False:
-    #         for motor in self.motors:
-    #             motor.cmd.mode = queryMotorMode(MotorType.GO_M8010_6,MotorMode.CALIBRATE)
-    #         for motor in self.motors:
-    #             self.serial.sendRecv(motor.cmd, motor.data)
-    #             time.sleep(6)  
-    #     else:
-    #         print("system still runing can't calibrate")
 
     def position_force_velocity_cmd(self,motor_number=0,torque=0,kp=0,kd=0,position=0,velocity=0):
         for motor in self.motors:
@@ -95,13 +48,14 @@ class unitree_communication(object):
                 motor.cmd.dq = velocity*queryGearRatio(MotorType.GO_M8010_6)
             
     def motor_sendRecv(self):
+        success = True
         for motor in self.motors:
-            if motor.max_position>=motor.data.q and motor.data.q>=motor.min_position:
+            if motor.min <= motor.data.q <= motor.max:
                 self.serial.sendRecv(motor.cmd, motor.data)
                 # time.sleep(0.1)
             else:
                 print("motor {0} out off constrant".format(motor.cmd.id))
-                print(motor.max_position, motor.data.q, motor.min_position)
+                print(motor.max, motor.data.q, motor.min)
                 motor.cmd.mode = queryMotorMode(MotorType.GO_M8010_6,MotorMode.FOC)
                 motor.cmd.q    = 0
                 motor.cmd.dq   = 0
@@ -109,7 +63,9 @@ class unitree_communication(object):
                 motor.cmd.kd   = 0
                 motor.cmd.tau  = 0
                 self.serial.sendRecv(motor.cmd, motor.data)
+                success = False
                 # time.sleep(0.0006)
+        return success
 
     def enableallmotor(self):       
         for motor in self.motors:
@@ -125,24 +81,17 @@ class unitree_communication(object):
 
     
 class unitree_motor(object):                                                                                  
-    def __init__(self,motor_id = 0,MAX_degree = 0,MIN_degree = 0, inital_position_check = 0):
-        
+    def __init__(self, motor_id=None,MAX_degree=None,MIN_degree=None):
         self.id = motor_id
         self.cmd = MotorCmd()
         self.data = MotorData()
         self.data.motorType = MotorType.GO_M8010_6
         self.cmd.motorType = MotorType.GO_M8010_6
-        # self.inital_position_cheak_point = inital_position_check
-        self.inital_position_max = inital_position_check + 1
-        self.inital_position_min = inital_position_check - 1
-        self.inital_position = inital_position_check
-        # self.inital_position = 0
-        self.max_position = inital_position_check + MAX_degree
-        self.min_position = inital_position_check + MIN_degree
-        self.max = MAX_degree
-        self.min = MIN_degree
+        self.max = MAX_degree * SCALE[motor_id] + MOTOR_ORIGIN_POS[motor_id]
+        self.min = MIN_degree * SCALE[motor_id] + MOTOR_ORIGIN_POS[motor_id]
         self.cmd.id = motor_id
-        # self.inital_check_success = False
+
+        print(f'constrain: id {self.id}, max {self.max}, min {self.min}')
 
 
 class UnitreeInterface(Node):
@@ -151,11 +100,11 @@ class UnitreeInterface(Node):
         super().__init__('unitree_pubsub')
 
         self.unitree = unitree_communication('/dev/unitree-l')
-        MOTOR1 = self.unitree.createMotor(motor_number = 1,initalposition = MOTOR_INIT_POS[1],MAX=8.475,MIN=-5.364)
-        MOTOR2 = self.unitree.createMotor(motor_number = 2,initalposition = MOTOR_INIT_POS[2],MAX=26.801,MIN=-1)
+        MOTOR1 = self.unitree.createMotor(motor_number = 1, MAX=2.093, MIN=0.0)
+        MOTOR2 = self.unitree.createMotor(motor_number = 2, MAX=0.0, MIN=-2.7)
         self.unitree2 = unitree_communication('/dev/unitree-r')
-        MOTOR4 = self.unitree2.createMotor(motor_number = 4,initalposition = MOTOR_INIT_POS[4],MAX=5.364,MIN=-8.475)
-        MOTOR5 = self.unitree2.createMotor(motor_number = 5,initalposition = MOTOR_INIT_POS[5],MAX=1,MIN=-26.801)
+        MOTOR4 = self.unitree2.createMotor(motor_number = 4, MAX=0.0, MIN=2.093)
+        MOTOR5 = self.unitree2.createMotor(motor_number = 5, MAX=-2.7, MIN=0.0)
 
         self.unitree_command_sub = self.create_subscription(
             LowCommand,
@@ -202,8 +151,10 @@ class UnitreeInterface(Node):
         self.jointstate_pub.publish(self.jointstate_msg)
 
     def recv_timer_callback(self):
-        self.unitree.motor_sendRecv()
-        self.unitree2.motor_sendRecv()
+        feedback = self.unitree.motor_sendRecv()
+        feedback2 = self.unitree2.motor_sendRecv()
+        if feedback==False or feedback2==False:
+            self.get_logger().error('unitree motor out of constrain.')
         msg_list = LowState()
         self.jointstate_msg.header.stamp = self.get_clock().now().to_msg()
         
