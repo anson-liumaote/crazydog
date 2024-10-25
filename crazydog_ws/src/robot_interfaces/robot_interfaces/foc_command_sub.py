@@ -18,10 +18,12 @@ class focCommandSubscriber(Node):
         can_interface = 'can0'
         self.bus = can.interface.Bus(channel=can_interface, interface='socketcan')
 
-    def listener_callback(self, msg):
-        motor1_current = max(-10, min(10, msg.data[0]))     # constrain -20~20
-        motor2_current = max(-10, min(10, msg.data[1]))     # constrain -20~20
-        motor3_current = max(-5, min(5, msg.data[2]))
+    def listener_callback(self, msg: Float32MultiArray):
+        torque_const_M3508 = 0.247  # N-m/A 
+        torque_const_M2006 = 0.18  # N-m/A 
+        motor1_current = max(-10, min(10, (msg.data[0]/torque_const_M3508)))     # constrain -20~20
+        motor2_current = max(-10, min(10, (msg.data[1]/torque_const_M3508)))     # constrain -20~20
+        motor3_current = max(-5, min(5, msg.data[2]/torque_const_M2006)) # constrain -5~5
         motor1_cmd = int(motor1_current*16384/20)
         motor2_cmd = int(motor2_current*16384/20)
         motor3_cmd = int(motor3_current*10000/10)

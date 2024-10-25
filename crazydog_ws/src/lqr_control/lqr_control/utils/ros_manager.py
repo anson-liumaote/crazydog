@@ -71,10 +71,11 @@ class RosManager(Node):
     def status_callback(self, msg_list: LowState):
         self.motor_states = msg_list.motor_state
     
-    def send_foc_command(self, current_left, current_right):
+    def send_foc_command(self, tau_left, tau_right):
         msg = Float32MultiArray()
-        torque_const = 0.247  # 0.3 N-m/A
-        msg.data = [-current_left/torque_const, current_right/torque_const]
+        # torque_const = 0.247  # 0.3 N-m/A
+        # msg.data = [-tau_left/torque_const, tau_right/torque_const]
+        msg.data = [-tau_left, tau_right]
         self.foc_command_publisher.publish(msg)
     
     def get_joint_pos(self, joint_name):

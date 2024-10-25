@@ -5,6 +5,9 @@ from std_msgs.msg import Float32MultiArray
 import can
 import math
 
+GEAR_RATIO_M3508 = 15.76
+GEAR_RATIO_M2006 = 36.0
+
 class focDataPublisher(Node):
 
     def __init__(self):
@@ -12,6 +15,9 @@ class focDataPublisher(Node):
         self.publisher_ = self.create_publisher(Float32MultiArray, 'foc_msg', 1)
         can_interface = 'can0'
         self.bus = can.interface.Bus(channel=can_interface, interface='socketcan')
+        self.t0 = self.get_clock().now()
+        self.angle_single = 0.0
+        self.p0 = None
         self.receive_can_messages()
 
     def receive_can_messages(self):
@@ -19,11 +25,14 @@ class focDataPublisher(Node):
         while True:
             try:
                 message = self.bus.recv(timeout=1)
+                t1 = self.get_clock().now()
+                dt = (t1 - self.t0).nanoseconds / 1e9  # Time in seconds
+                self.t0 = t1
                 # for c620
                 if message is not None and (message.arbitration_id==0x201 or message.arbitration_id==0x202):
                     id = float(message.arbitration_id)
-                    angle = float(((message.data[0] << 8) | message.data[1])/8192*2*math.pi)
-                    speed = float(self.twos_complement_16bit((message.data[2] << 8) | message.data[3]))/15.76 #19.2 old gear ratio #15.76 new gear ratio
+                    angle = float(((message.data[0] << 8) | message.data[1])/8192*2*math.pi)/GEAR_RATIO_M3508
+                    speed = float(self.twos_complement_16bit((message.data[2] << 8) | message.data[3]))/GEAR_RATIO_M3508 #19.2 old gear ratio #15.76 new gear ratio
                     current = float(self.twos_complement_16bit((message.data[4] << 8) | message.data[5]))
                     temperature = float(message.data[6])
                     print('id', id,'angle', angle, 'speed', speed, 'current', current, 'temp', temperature)
@@ -32,11 +41,15 @@ class focDataPublisher(Node):
                 # for c610
                 elif message is not None and (message.arbitration_id==0x203):
                     id = float(message.arbitration_id)
-                    angle = float(((message.data[0] << 8) | message.data[1])/8192*2*math.pi)
-                    speed = float(self.twos_complement_16bit((message.data[2] << 8) | message.data[3]))/36.0 # gear ratio 1:36
+                    angle = float(((message.data[0] << 8) | message.data[1])/8192*2*math.pi)/GEAR_RATIO_M2006
+                    speed = float(self.twos_complement_16bit((message.data[2] << 8) | message.data[3]))/GEAR_RATIO_M2006 # gear ratio 1:36
                     current = float(self.twos_complement_16bit((message.data[4] << 8) | message.data[5]))
                     temperature = 0.0
-                    print('id', id,'angle', angle, 'speed', speed, 'current', current, 'temp', temperature)
+                    self.angle_single += speed * dt
+                    # print('id', id,'angle', angle, 'speed', speed, 'current', current, 'temp', temperature)
+                    if self.p0==None:
+                        self.p0 = angle
+                    print(angle, self.angle_single+self.p0)
                     msg.data = [id, angle, speed, current, temperature]
                     self.publisher_.publish(msg)
                     
