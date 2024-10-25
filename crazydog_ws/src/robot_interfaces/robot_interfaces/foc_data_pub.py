@@ -19,12 +19,23 @@ class focDataPublisher(Node):
         while True:
             try:
                 message = self.bus.recv(timeout=1)
+                # for c620
                 if message is not None and (message.arbitration_id==0x201 or message.arbitration_id==0x202):
                     id = float(message.arbitration_id)
                     angle = float(((message.data[0] << 8) | message.data[1])/8192*2*math.pi)
                     speed = float(self.twos_complement_16bit((message.data[2] << 8) | message.data[3]))/15.76 #19.2 old gear ratio #15.76 new gear ratio
                     current = float(self.twos_complement_16bit((message.data[4] << 8) | message.data[5]))
                     temperature = float(message.data[6])
+                    print('id', id,'angle', angle, 'speed', speed, 'current', current, 'temp', temperature)
+                    msg.data = [id, angle, speed, current, temperature]
+                    self.publisher_.publish(msg)
+                # for c610
+                elif message is not None and (message.arbitration_id==0x203):
+                    id = float(message.arbitration_id)
+                    angle = float(((message.data[0] << 8) | message.data[1])/8192*2*math.pi)
+                    speed = float(self.twos_complement_16bit((message.data[2] << 8) | message.data[3]))/36.0 # gear ratio 1:36
+                    current = float(self.twos_complement_16bit((message.data[4] << 8) | message.data[5]))
+                    temperature = 0.0
                     print('id', id,'angle', angle, 'speed', speed, 'current', current, 'temp', temperature)
                     msg.data = [id, angle, speed, current, temperature]
                     self.publisher_.publish(msg)
