@@ -162,20 +162,20 @@ class UnitreeInterface(Node):
         self.status_pub = self.create_publisher(LowState, 'unitree_status', 1)
         self.unitree.enableallmotor()
         self.unitree2.enableallmotor()
-        self.recv_timer = self.create_timer(0.001, self.recv_timer_callback)    # period need to be check
+        self.recv_timer = self.create_timer(0.008, self.recv_timer_callback)    # period need to be check
 
-        self.jointstate_pub = self.create_publisher(JointState, 'jointstate', 1)
-        self.foc_status_sub = self.create_subscription(
-            Float32MultiArray,
-            'foc_msg',
-            self.foc_status_callback,
-            1)
-        self.jointstate_msg = JointState()
-        self.jointstate_msg.header.stamp = self.get_clock().now().to_msg()
-        self.jointstate_msg.header.frame_id = ""
-        self.jointstate_msg.name = ["hip_l", "thigh_l","calf_l","hip_r","thigh_r","calf_r", "wheel_l", "wheel_r"]
-        self.jointstate_msg.position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        self.jointstate_msg.velocity = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        # self.jointstate_pub = self.create_publisher(JointState, 'jointstate', 1)
+        # self.foc_status_sub = self.create_subscription(
+        #     Float32MultiArray,
+        #     'foc_msg',
+        #     self.foc_status_callback,
+        #     1)
+        # self.jointstate_msg = JointState()
+        # self.jointstate_msg.header.stamp = self.get_clock().now().to_msg()
+        # self.jointstate_msg.header.frame_id = ""
+        # self.jointstate_msg.name = ["hip_l", "thigh_l","calf_l","hip_r","thigh_r","calf_r", "wheel_l", "wheel_r"]
+        # self.jointstate_msg.position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        # self.jointstate_msg.velocity = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     def command_callback(self, msg):
         for id, cmd in enumerate(msg.motor_cmd):
@@ -188,20 +188,20 @@ class UnitreeInterface(Node):
             self.unitree.position_force_velocity_cmd(motor_number, torque, kp, kd, position, velocity)
             self.unitree2.position_force_velocity_cmd(motor_number, torque, kp, kd, position, velocity)
 
-    def foc_status_callback(self, msg):
-        self.jointstate_msg.header.stamp = self.get_clock().now().to_msg()
-        if msg.data[0] == 513.:   # motor left
-            self.jointstate_msg.position[6] = -msg.data[1]
-            self.jointstate_msg.velocity[6] = -msg.data[2] * WHEEL_RADIUS * (2 * math.pi / 60)
-        elif msg.data[0] == 514.: # motor right
-            self.jointstate_msg.position[7] = msg.data[1]
-            self.jointstate_msg.velocity[7] = msg.data[2] * WHEEL_RADIUS * (2 * math.pi / 60)
+    # def foc_status_callback(self, msg):
+    #     self.jointstate_msg.header.stamp = self.get_clock().now().to_msg()
+    #     if msg.data[0] == 513.:   # motor left
+    #         self.jointstate_msg.position[6] = -msg.data[1]
+    #         self.jointstate_msg.velocity[6] = -msg.data[2] * WHEEL_RADIUS * (2 * math.pi / 60)
+    #     elif msg.data[0] == 514.: # motor right
+    #         self.jointstate_msg.position[7] = msg.data[1]
+    #         self.jointstate_msg.velocity[7] = msg.data[2] * WHEEL_RADIUS * (2 * math.pi / 60)
 
     def recv_timer_callback(self):
         self.unitree.motor_sendRecv()
         self.unitree2.motor_sendRecv()
         msg_list = LowState()
-        self.jointstate_msg.header.stamp = self.get_clock().now().to_msg()
+        # self.jointstate_msg.header.stamp = self.get_clock().now().to_msg()
         
         for motor in self.unitree.motors:
             msg = MotorState()
@@ -210,8 +210,8 @@ class UnitreeInterface(Node):
             msg.temperature = int(motor.data.temp)
             id = motor.id
             msg_list.motor_state[id] = msg
-            self.jointstate_msg.position[id] = float(motor.data.q)
-            self.jointstate_msg.velocity[id] = float(motor.data.dq)
+            # self.jointstate_msg.position[id] = float(motor.data.q)
+            # self.jointstate_msg.velocity[id] = float(motor.data.dq)
         for motor in self.unitree2.motors:
             msg = MotorState()
             msg.q = float(motor.data.q)
@@ -219,10 +219,10 @@ class UnitreeInterface(Node):
             msg.temperature = int(motor.data.temp)
             id = motor.id
             msg_list.motor_state[id] = msg
-            self.jointstate_msg.position[id] = float(motor.data.q)
-            self.jointstate_msg.velocity[id] = float(motor.data.dq)
+            # self.jointstate_msg.position[id] = float(motor.data.q)
+            # self.jointstate_msg.velocity[id] = float(motor.data.dq)
         self.status_pub.publish(msg_list)
-        self.jointstate_pub.publish(self.jointstate_msg)
+        # self.jointstate_pub.publish(self.jointstate_msg)
 
 
 def main(args=None):

@@ -34,9 +34,9 @@ def generate_launch_description():
             executable='unitree_pubsub',
             name='unitree_pubsub'
         ),
-        Node(
-           package='robot_interfaces',
-           executable='odom_pub',
-           name='odom_pub'
-        ),
+        # Node(
+        #    package='robot_interfaces',
+        #    executable='odom_pub',
+        #    name='odom_pub'
+        # ),
     ])

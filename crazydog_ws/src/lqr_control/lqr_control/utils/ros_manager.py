@@ -27,6 +27,8 @@ class RosTopicManager(Node):
         self.row = 0
         self.row_last = 0
         self.row_dot = 0
+        self.yaw = 0
+        self.yaw_dot = 0
         self.dt = 1/300
         self.joy_linear_vel = 0.
         self.joy_angular_vel = 0.
@@ -59,6 +61,7 @@ class RosTopicManager(Node):
         self.motor_states = msg_list.motor_state
         with self.ctrl_condition:
             self.ctrl_condition.notify()
+        
 
     def foc_callback(self, msg):
         if msg.data[0] == 513.:   # motor left
@@ -92,18 +95,25 @@ class RosTopicManager(Node):
         t0 = +2.0 * (qua_w * qua_x + qua_y * qua_z)
         t1 = +1.0 - 2.0 * (qua_x * qua_x + qua_y * qua_y)
         self.row = math.atan2(t0, t1)
+        self.yaw = math.atan2(2 * (qua_w * qua_z + qua_x * qua_y), 1 - 2 * (qua_y**2 + qua_z**2))
+        
+
         # self.pitch = -(math.asin(2 * (qua_w * qua_y - qua_z * qua_x)) - self.pitch_bias) 
         self.row_dot = msg.angular_velocity.x
+        self.yaw_dot = msg.angular_velocity.z
         # self.row_dot = (self.row - self.row_last) / self.dt
         self.row_last = self.row
         # print(-self.row)
         # self.pitch_dot = (self.pitch - self.pitch_last) / self.dt
         # self.pitch_last = self.pitch
         # self.pitch_dot = msg.angular_velocity.y
+
+        # with self.ctrl_condition:
+        #     self.ctrl_condition.notify()
         
 
     def get_orientation(self):
-        return -self.row, -self.row_dot
+        return -self.row, -self.row_dot,
     
     def vel_callback(self, msg):
         self.joy_linear_vel = msg.linear.x
