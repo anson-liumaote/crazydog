@@ -4,7 +4,7 @@ import cvxpy as cp
 import matplotlib.pyplot as plt
 from math import sin, cos
 import matplotlib.animation as animation
-from biped_robot_dynamics import l, dt, sys_discrete, A_zoh, B_zoh
+from crazydog_ws.src.mpc_control.mpc_control.utils.biped_robot_dynamics import l, dt, sys_discrete, A_zoh, B_zoh
 import time
 
 

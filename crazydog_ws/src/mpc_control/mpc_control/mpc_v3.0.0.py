@@ -12,6 +12,13 @@ import pickle
 from datetime import datetime
 import os
 from utils import urdf_loader
+import osqp
+import scipy as sp
+from scipy import sparse
+from LQR_pin import InvertedPendulumLQR
+import matplotlib.pyplot as plt
+import time
+from utils.biped_robot_dynamics import l, dt, sys_discrete, A_zoh, B_zoh
 
 WHEEL_RADIUS = 0.07     # m
 WHEEL_MASS = 0.28  # kg
@@ -40,21 +47,21 @@ class robotController():
         self.com, self.l_bar = self.robot.calculateCom(plot=False)
         mass = self.robot.calculateMass()
         self.lqr_thread = None
-        self.lqr_controller = InvertedPendulumLQR(pos=q, 
-                                                  urdf=URDF_PATH, 
-                                                  wheel_r=WHEEL_RADIUS, 
-                                                  M=WHEEL_MASS, Q=Q, R=R, 
-                                                  delta_t=1/250, 
-                                                  show_animation=False,
-                                                  m=mass,
-                                                  l_bar=self.l_bar,
-                                                  dynamic_K = True,
-                                                  max_l=0.46,
-                                                  min_l=0.07,
-                                                  slice_w=0.03)
-        self.lqr_controller.change_K(self.l_bar)
+        # self.lqr_controller = InvertedPendulumLQR(pos=q, 
+        #                                           urdf=URDF_PATH, 
+        #                                           wheel_r=WHEEL_RADIUS, 
+        #                                           M=WHEEL_MASS, Q=Q, R=R, 
+        #                                           delta_t=1/250, 
+        #                                           show_animation=False,
+        #                                           m=mass,
+        #                                           l_bar=self.l_bar,
+        #                                           dynamic_K = True,
+        #                                           max_l=0.46,
+        #                                           min_l=0.07,
+        #                                           slice_w=0.03)
+        # self.lqr_controller.change_K(self.l_bar)
         # l_bar from 0.1 to 0.37
-        self.jump_flag = False
+        # self.jump_flag = False
 
 
     def enable_ros_manager(self):
@@ -81,22 +88,22 @@ class robotController():
         cmd.kd = float(kd)
         self.cmd_list.motor_cmd[motor_number] = cmd
 
-    def init_unitree_motor(self):
-        if self.check_target_pos("thigh_l") and self.check_target_pos("thigh_r"):
-            while self.check_target_pos("thigh_l") and self.check_target_pos("thigh_r"):
-                # self.set_motor_cmd(motor_number=1, kp=2, kd=0.02, position=self.ros_manager.motor_states[1].q-0.1, torque=0, velocity=0)
-                # self.set_motor_cmd(motor_number=4, kp=2, kd=0.02, position=self.ros_manager.motor_states[4].q+0.1, torque=0, velocity=0)
-                self.set_motor_cmd(motor_number=1, kp=0, kd=0.2, position=0, torque=0, velocity=-0.5)
-                self.set_motor_cmd(motor_number=4, kp=0, kd=0.2, position=0, torque=0, velocity=0.5)
-                self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-                time.sleep(0.001)
-            self.set_motor_cmd(motor_number=1, kp=6., kd=0.1, position=self.ros_manager.motor_states[1].q, torque=0, velocity=0)
-            self.set_motor_cmd(motor_number=2, kp=6., kd=0.1, position=self.ros_manager.motor_states[2].q, torque=0, velocity=0)
-            self.set_motor_cmd(motor_number=4, kp=6., kd=0.1, position=self.ros_manager.motor_states[4].q, torque=0, velocity=0)
-            self.set_motor_cmd(motor_number=5, kp=6., kd=0.1, position=self.ros_manager.motor_states[5].q, torque=0, velocity=0)
-            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-        else:
-            print("inital fail")
+    # def init_unitree_motor(self):
+    #     if self.check_target_pos("thigh_l") and self.check_target_pos("thigh_r"):
+    #         while self.check_target_pos("thigh_l") and self.check_target_pos("thigh_r"):
+    #             # self.set_motor_cmd(motor_number=1, kp=2, kd=0.02, position=self.ros_manager.motor_states[1].q-0.1, torque=0, velocity=0)
+    #             # self.set_motor_cmd(motor_number=4, kp=2, kd=0.02, position=self.ros_manager.motor_states[4].q+0.1, torque=0, velocity=0)
+    #             self.set_motor_cmd(motor_number=1, kp=0, kd=0.2, position=0, torque=0, velocity=-0.5)
+    #             self.set_motor_cmd(motor_number=4, kp=0, kd=0.2, position=0, torque=0, velocity=0.5)
+    #             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+    #             time.sleep(0.001)
+    #         self.set_motor_cmd(motor_number=1, kp=6., kd=0.1, position=self.ros_manager.motor_states[1].q, torque=0, velocity=0)
+    #         self.set_motor_cmd(motor_number=2, kp=6., kd=0.1, position=self.ros_manager.motor_states[2].q, torque=0, velocity=0)
+    #         self.set_motor_cmd(motor_number=4, kp=6., kd=0.1, position=self.ros_manager.motor_states[4].q, torque=0, velocity=0)
+    #         self.set_motor_cmd(motor_number=5, kp=6., kd=0.1, position=self.ros_manager.motor_states[5].q, torque=0, velocity=0)
+    #         self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+    #     else:
+    #         print("inital fail")
 
     
     def inverse_kinematics(self, x, y, L1=THIGH_LENGTH, L2=CALF_LENGTH):
@@ -151,31 +158,31 @@ class robotController():
     #         self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
     #         time.sleep(0.01)
     
-    def standup(self):
-        self.ros_manager.wheel_coordinate = [-0.06167-ORIGIN_BIAS[0], 0.1206043-ORIGIN_BIAS[1]]
-        theta1_err, theta2_err = self.get_angle_error(self.ros_manager.wheel_coordinate)     # lock legs coordinate [x, y] (hip joint coordinate (0.0742, 0))
-        self.lqr_controller.change_K(self.l_bar)
-        self.startController()
-        time.sleep(0.4)
-        self.set_motor_cmd(motor_number=1, kp=5, kd=0.12, position=MOTOR_INIT_POS[1]-theta1_err*6.33)
-        self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-        time.sleep(0.1)
-        self.set_motor_cmd(motor_number=4, kp=5, kd=0.12, position=MOTOR_INIT_POS[4]+theta1_err*6.33)
-        self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-        time.sleep(0.1)
-        self.set_motor_cmd(motor_number=2, kp=10, kd=0.12, position=MOTOR_INIT_POS[2]-theta2_err*6.33*1.6)
-        self.set_motor_cmd(motor_number=5, kp=10, kd=0.12, position=MOTOR_INIT_POS[5]+theta2_err*6.33*1.6)
-        self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+    # def standup(self):
+    #     self.ros_manager.wheel_coordinate = [-0.06167-ORIGIN_BIAS[0], 0.1206043-ORIGIN_BIAS[1]]
+    #     theta1_err, theta2_err = self.get_angle_error(self.ros_manager.wheel_coordinate)     # lock legs coordinate [x, y] (hip joint coordinate (0.0742, 0))
+    #     # self.lqr_controller.change_K(self.l_bar)
+    #     # self.startController()
+    #     time.sleep(0.4)
+    #     self.set_motor_cmd(motor_number=1, kp=5, kd=0.12, position=MOTOR_INIT_POS[1]-theta1_err*6.33)
+    #     self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+    #     time.sleep(0.1)
+    #     self.set_motor_cmd(motor_number=4, kp=5, kd=0.12, position=MOTOR_INIT_POS[4]+theta1_err*6.33)
+    #     self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+    #     time.sleep(0.1)
+    #     self.set_motor_cmd(motor_number=2, kp=10, kd=0.12, position=MOTOR_INIT_POS[2]-theta2_err*6.33*1.6)
+    #     self.set_motor_cmd(motor_number=5, kp=10, kd=0.12, position=MOTOR_INIT_POS[5]+theta2_err*6.33*1.6)
+    #     self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
         
 
-    def update_pose(self):
-        theta1_err, theta2_err = self.get_angle_error(self.ros_manager.wheel_coordinate)
-        self.set_motor_cmd(motor_number=1, kp=10, kd=0.12, position=MOTOR_INIT_POS[1]-theta1_err*6.33)
-        self.set_motor_cmd(motor_number=4, kp=10, kd=0.12, position=MOTOR_INIT_POS[4]+theta1_err*6.33)
-        self.set_motor_cmd(motor_number=2, kp=10, kd=0.12, position=MOTOR_INIT_POS[2]-theta2_err*6.33*1.6)
-        self.set_motor_cmd(motor_number=5, kp=10, kd=0.12, position=MOTOR_INIT_POS[5]+theta2_err*6.33*1.6)
-        # print(theta1_err, theta2_err)
-        self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+    # def update_pose(self):
+    #     theta1_err, theta2_err = self.get_angle_error(self.ros_manager.wheel_coordinate)
+    #     self.set_motor_cmd(motor_number=1, kp=10, kd=0.12, position=MOTOR_INIT_POS[1]-theta1_err*6.33)
+    #     self.set_motor_cmd(motor_number=4, kp=10, kd=0.12, position=MOTOR_INIT_POS[4]+theta1_err*6.33)
+    #     self.set_motor_cmd(motor_number=2, kp=10, kd=0.12, position=MOTOR_INIT_POS[2]-theta2_err*6.33*1.6)
+    #     self.set_motor_cmd(motor_number=5, kp=10, kd=0.12, position=MOTOR_INIT_POS[5]+theta2_err*6.33*1.6)
+    #     # print(theta1_err, theta2_err)
+    #     self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
 
     def calibrate_com(self):
         oMi = self.robot.getOmi()
@@ -191,8 +198,8 @@ class robotController():
 
     def controller(self):
         self.ros_manager.get_logger().info('controller start')
-        X = np.zeros((4, 1))    # X = [x, x_dot, theta, theta_dot]
-        U = np.zeros((1, 1))
+        # X = np.zeros((4, 1))    # X = [x, x_dot, theta, theta_dot]
+        # U = np.zeros((1, 1))
         t0 = time.time()
         X_ref = np.zeros((4, 1))
         yaw_ref = 0.
@@ -201,58 +208,129 @@ class robotController():
         X_list = []
         U_list = []
 
+        Ad = sparse.csc_matrix(A_zoh.tolist())
+        Bd = sparse.csc_matrix(B_zoh.tolist())
+        [nx, nu] = Bd.shape
+
+        # Constraints
+        u0 = 0
+        umin = np.array([-1.]) - u0
+        umax = np.array([1.]) - u0
+        xmin = np.array([-np.inf,-np.inf,-np.inf,-np.inf])
+        xmax = np.array([np.inf, np.inf, np.inf, np.inf])
+
+        # Objective function
+        Q = sparse.diags([0., 50., 100., 5.])
+        QN = Q
+        R = sparse.diags([5.])
+
+        # Initial and reference states
+        x0 = np.array([0., 0., 0., 0.])
+        xr = np.array([0., 0., 0., 0.])
+        
+        x0[0] = self.ros_manager.get_linear_pos_x()
+        x0[1] = self.ros_manager.get_linear_vel_x()
+        # get IMU data
+        x0[2], x0[3] = self.ros_manager.get_pitch_orientation()
+
+        # Prediction horizon
+        N = 100
+
+        # Cast MPC problem to a QP: x = (x(0),x(1),...,x(N),u(0),...,u(N-1))
+        # - quadratic objective
+        P = sparse.block_diag([sparse.kron(sparse.eye(N), Q), QN,
+                            sparse.kron(sparse.eye(N), R)], format='csc')
+        # - linear objective
+        q = np.hstack([np.kron(np.ones(N), -Q@xr), -QN@xr, np.zeros(N*nu)])
+        # - linear dynamics
+        Ax = sparse.kron(sparse.eye(N+1),-sparse.eye(nx)) + sparse.kron(sparse.eye(N+1, k=-1), Ad)
+        Bu = sparse.kron(sparse.vstack([sparse.csc_matrix((1, N)), sparse.eye(N)]), Bd)
+        Aeq = sparse.hstack([Ax, Bu])
+        leq = np.hstack([-x0, np.zeros(N*nx)])
+        ueq = leq
+        # - input and state constraints
+        Aineq = sparse.eye((N+1)*nx + N*nu)
+        lineq = np.hstack([np.kron(np.ones(N+1), xmin), np.kron(np.ones(N), umin)])
+        uineq = np.hstack([np.kron(np.ones(N+1), xmax), np.kron(np.ones(N), umax)])
+        # - OSQP constraints
+        A = sparse.vstack([Aeq, Aineq], format='csc')
+        l = np.hstack([leq, lineq])
+        u = np.hstack([ueq, uineq])
+
+        # Create an OSQP object
+        prob = osqp.OSQP()
+
+        # Setup workspace
+        prob.setup(P, q, A, l, u)
+        print('setup')
+
         while self.running_flag:
             with self.ros_manager.ctrl_condition:
                 self.ros_manager.ctrl_condition.wait()
-            t1 = time.time()
-            dt = t1 - t0
-            t0 = t1
-            X_ref[2, 0], yaw_ref = self.ros_manager.get_joy_vel()
-            X_ref[2, 0] += MID_ANGLE
-            X_last = np.copy(X)
-            # foc_status_left, foc_status_right = self.ros_manager.get_foc_status()
-            # get motor data
-            X[0, 0] = self.ros_manager.get_linear_pos_x()
-            X[1, 0] = self.ros_manager.get_linear_vel_x()
-            # get IMU data
-            X[2, 0], X[3, 0] = self.ros_manager.get_pitch_orientation()
-            if abs(X[2, 0]) > math.radians(30):     # constrain
+
+            if abs(x0[2]) > math.radians(30):     # constrain
                 # U[0, 0] = 0.0
                 self.ros_manager.send_foc_command(0.0, 0.0)
                 continue
+
+            t1 = time.time()
+            dt = t1 - t0
+            t0 = t1
+            # xr[2, 0], yaw_ref = self.ros_manager.get_joy_vel()
+            # xr[2, 0] += MID_ANGLE
             
-            # get u from lqr
-            U = np.copy(self.lqr_controller.lqr_control(X, X_ref))
+            res = prob.solve()
+            # Check solver status
+            if res.info.status != 'solved':
+                raise ValueError('OSQP did not solve the problem!')
+
+            # Apply first control input to the plant
+            ctrl = res.x[-N*nu:-(N-1)*nu]
             _, yaw_speed = self.ros_manager.get_yaw_orientation()
             yaw_torque = self.steering_pid.update(yaw_ref, yaw_speed, dt)
 
-            if (time.time()-start_time) < 3:
-                yaw_torque = 0.0
-            if (time.time()-start_time) > 3:
-                # self.calibrate_com()
-                self.update_pose()
-                self.lqr_controller.change_K(self.l_bar)
+            # if (time.time()-start_time) < 3:
+            yaw_torque = 0.0
 
-            motor_command_left = U[0, 0] - yaw_torque
-            motor_command_right = U[0, 0] + yaw_torque
+            motor_command_left = ctrl[0] - yaw_torque
+            motor_command_right = ctrl[0] + yaw_torque
             # soft constrain
             motor_command_left = max(-1.5, min(motor_command_left, 1.5))
             motor_command_right = max(-1.5, min(motor_command_right, 1.5))
 
             self.ros_manager.send_foc_command(motor_command_left, motor_command_right)
 
-            if len(X_list)<=1001:
-                # print(len(X_list))
-                X_list.append(np.copy(X))
-                U_list.append(np.copy(U))
-                if len(X_list)==1000:
-                    formated_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-                    directory = f"/home/crazydog/crazydog/crazydog_ws/src/lqr_control/lqr_control/log/{formated_time}"
-                    os.makedirs(directory, exist_ok=True)  
-                    with open(os.path.join(directory, 'x.plk'), 'wb') as f1:
-                        pickle.dump(X_list, f1)
-                    with open(os.path.join(directory, 'u.plk'), 'wb') as f2:
-                        pickle.dump(U_list, f2)
+            # Update initial state
+            x0[0] = self.ros_manager.get_linear_pos_x()
+            x0[1] = self.ros_manager.get_linear_vel_x()
+            # get IMU data
+            x0[2], x0[3] = self.ros_manager.get_pitch_orientation()
+            l[:nx] = -x0
+            u[:nx] = -x0
+            prob.update(l=l, u=u)
+            
+            # X_last = np.copy(X)
+            # foc_status_left, foc_status_right = self.ros_manager.get_foc_status()
+            # get motor data
+            # X[0, 0] = self.ros_manager.get_linear_pos_x()
+            # X[1, 0] = self.ros_manager.get_linear_vel_x()
+            # # get IMU data
+            # X[2, 0], X[3, 0] = self.ros_manager.get_pitch_orientation()
+            
+            
+
+            # if len(X_list)<=1001:
+            #     # print(len(X_list))
+            #     X_list.append(np.copy(X))
+            #     U_list.append(np.copy(U))
+            #     if len(X_list)==1000:
+            #         formated_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+            #         directory = f"/home/crazydog/crazydog/crazydog_ws/src/lqr_control/lqr_control/log/{formated_time}"
+            #         os.makedirs(directory, exist_ok=True)  
+            #         with open(os.path.join(directory, 'x.plk'), 'wb') as f1:
+            #             pickle.dump(X_list, f1)
+            #         with open(os.path.join(directory, 'u.plk'), 'wb') as f2:
+            #             pickle.dump(U_list, f2)
             # else:
             #     print('log saved')
 
@@ -281,10 +359,10 @@ def main(args=None):
         "start": robot.startController,
         "d": robot.disableController,
         "r": robot.releaseUnitree,
-        "i": robot.init_unitree_motor,
+        # "i": robot.init_unitree_motor,
         # "l": robot.locklegs,
         "e": robot.enable_ros_manager,
-        "stand": robot.standup,
+        # "stand": robot.standup,
     }
 
     while True:

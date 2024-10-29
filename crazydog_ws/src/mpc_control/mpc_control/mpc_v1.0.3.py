@@ -162,7 +162,7 @@ class robotController():
             x0[2,], x0[3,] = self.ros_manager.get_orientation()
             # X[2, 0], _ = self.ros_manager.get_orientation()
             # X[3, 0] = (X[2, 0] - X_last[2, 0]) / dt
-            if abs(x0[2,]) > math.radians(15):     # constrain
+            if abs(x0[2,]) > math.radians(30):     # constrain
                 # U[0, 0] = 0.0
                 self.ros_manager.send_foc_command(0.0, 0.0)
                 continue

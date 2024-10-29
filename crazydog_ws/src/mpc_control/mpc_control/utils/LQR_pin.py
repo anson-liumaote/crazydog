@@ -76,7 +76,7 @@ class InvertedPendulumLQR:
         self.l_bar = l
         index = int((self.l_bar-self.min_l)/self.slice_w)
         self.K = self.K_list[index]
-        print('lbar', l, 'K change to:', self.K)
+        print('K change to:', self.K)
 
 
     def solve_DARE(self, A, B, Q, R, maxiter=150, eps=0.01):
@@ -145,7 +145,7 @@ class InvertedPendulumLQR:
             [0.0, 0.0, 0.0, 1.0],
             [0.0, 0.0, A_43, 0.0]
         ])
-        A = np.eye(self.nx) + self.delta_t * A
+        # A = np.eye(self.nx) + self.delta_t * A
 
         # B = np.array([
         #     [0.0],
@@ -164,6 +164,6 @@ class InvertedPendulumLQR:
             [0.0],
             [2*B_41]
         ])
-        B = self.delta_t * B
+        # B = self.delta_t * B
 
         return A, B

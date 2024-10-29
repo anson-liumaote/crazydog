@@ -5,7 +5,7 @@ from scipy import sparse
 from LQR_pin import InvertedPendulumLQR
 import matplotlib.pyplot as plt
 import time
-from biped_robot_dynamics import l, dt, sys_discrete, A_zoh, B_zoh
+from crazydog_ws.src.mpc_control.mpc_control.utils.biped_robot_dynamics import l, dt, sys_discrete, A_zoh, B_zoh
 
 Ad = sparse.csc_matrix(A_zoh.tolist())
 Bd = sparse.csc_matrix(B_zoh.tolist())

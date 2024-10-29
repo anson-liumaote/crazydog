@@ -33,7 +33,7 @@ class OdometryNode(Node):
         self.y = 0.0
         self.theta = 0.0  # Orientation
 
-        self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
+        self.odom_pub = self.create_publisher(Odometry, 'odom', 1)
         self.imu_subscriber = self.create_subscription(Imu, '/handsfree/imu', self.imu_callback, 5)
         self.jointstate_subscriber = self.create_subscription(JointState,'jointstate', self.jointstate_callback, 5)
         self.last_time = self.get_clock().now()
