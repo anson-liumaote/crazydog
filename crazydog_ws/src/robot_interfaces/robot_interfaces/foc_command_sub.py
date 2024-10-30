@@ -23,8 +23,8 @@ class focCommandSubscriber(Node):
         torque_const_M2006 = 0.18  # N-m/A 
         motor1_current = max(-10, min(10, (msg.data[0]/torque_const_M3508)))     # constrain -20~20
         motor2_current = max(-10, min(10, (msg.data[1]/torque_const_M3508)))     # constrain -20~20
-        # motor3_current = max(-5, min(5, msg.data[2]/torque_const_M2006)) # constrain -5~5
-        motor3_current = 0.0
+        motor3_current = max(-5, min(5, msg.data[2]/torque_const_M2006)) # constrain -5~5
+        # motor3_current = 0.0
         motor1_cmd = int(motor1_current*16384/20)
         motor2_cmd = int(motor2_current*16384/20)
         motor3_cmd = int(motor3_current*10000/10)
