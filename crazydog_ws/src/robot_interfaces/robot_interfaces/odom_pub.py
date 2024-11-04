@@ -24,8 +24,8 @@ class OdometryNode(Node):
     def __init__(self, wheels_separation, wheels_radius):
         super().__init__('odometry_node')
         
-        self.wheel_radius = wheels_radius  # in meters
-        self.wheel_separation = wheels_separation  # in meters
+        # self.wheel_radius = wheels_radius  # in meters
+        # self.wheel_separation = wheels_separation  # in meters
 
         self.jointstate = JointState()
 
@@ -38,20 +38,23 @@ class OdometryNode(Node):
         self.jointstate_subscriber = self.create_subscription(JointState,'jointstate', self.jointstate_callback, 5)
         self.last_time = self.get_clock().now()
         # self.timer = self.create_timer(0.1, self.timer_callback)  # 10 Hz
+        self.last_pos_left = None
+        self.last_pos_right = None
 
     def jointstate_callback(self, msg):
         self.jointstate = msg
 
     def imu_callback(self, msg):
         try:
+            pos_left, pos_right = self.jointstate.position[6], self.jointstate.position[7]
             v_left, v_right = self.jointstate.velocity[6], self.jointstate.velocity[7]
-            self.publish_odometry(v_left, v_right, msg)
+            self.publish_odometry(pos_left, pos_right, v_left, v_right, msg)
         except Exception as e:
             self.get_logger().warning(f'{e}')
 
     def rpm_to_mps(self, rpm):
         """Convert RPM to meters per second."""
-        return rpm * self.wheel_radius * (2 * math.pi / 60)
+        return rpm * WHEEL_RADIUS * (2 * math.pi / 60)
 
     def quaternion_multiply(self, q1, q2):
         # 四元數乘法
@@ -95,21 +98,35 @@ class OdometryNode(Node):
         qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
         return [qx, qy, qz, qw]
 
-    def publish_odometry(self, v_left, v_right, imu_msg: Imu):
+    def publish_odometry(self, pos_left, pos_right, v_left, v_right, imu_msg: Imu):
         # """Publish odometry based on left and right RPM."""
         # v_left = self.rpm_to_mps(rpm_left)
         # v_right = self.rpm_to_mps(rpm_right)
 
-        v_avg = (v_left + v_right) / 2.0
-        omega = (v_right - v_left) / self.wheel_separation
+        # Calculate the distance each wheel has traveled
+        if self.last_pos_left == None or self.last_pos_right == None:
+            self.last_pos_left = pos_left
+            self.last_pos_right = pos_right
+        else:
+            dL = (pos_left - self.last_pos_left) * WHEEL_RADIUS
+            dR = (pos_right - self.last_pos_right) * WHEEL_RADIUS
+            self.last_pos_left = pos_left
+            self.last_pos_right = pos_right
 
-        # Update the robot's position
-        current_time = self.get_clock().now()
-        dt = (current_time - self.last_time).nanoseconds / 1e9  # Time in seconds
-        self.last_time = current_time
-        self.x += v_avg * dt * math.cos(self.theta)
-        self.y += v_avg * dt * math.sin(self.theta)
-        self.theta += omega * dt
+        v_avg = (v_left + v_right) / 2.0
+        omega = (v_right - v_left) / WHEEL_DISTANCE
+
+        # Calculate the forward movement and angular change
+        d = (dL + dR) / 2.0
+        dtheta = (dR - dL) / WHEEL_DISTANCE
+
+        # Update position
+        self.x += d * math.cos(self.theta)
+        self.y += d * math.sin(self.theta)
+        self.theta += dtheta  # Update orientation
+
+        # Normalize theta to stay within -pi to pi range
+        theta = (theta + math.pi) % (2 * math.pi) - math.pi
 
         # Create the odometry message
         odom_msg = Odometry()
