@@ -71,7 +71,8 @@ class OdometryNode(Node):
         r, p, y = self.euler_from_quaternion(q[0], q[1], q[2], q[3])
         rn = p
         pn = -r 
-        yn = y + np.pi/2
+        # yn = y + np.pi/2
+        yn = self.theta
         qn = self.get_quaternion_from_euler(rn, pn, yn)
         return qn
     
@@ -107,6 +108,7 @@ class OdometryNode(Node):
         if self.last_pos_left == None or self.last_pos_right == None:
             self.last_pos_left = pos_left
             self.last_pos_right = pos_right
+            return None
         else:
             dL = (pos_left - self.last_pos_left) * WHEEL_RADIUS
             dR = (pos_right - self.last_pos_right) * WHEEL_RADIUS
@@ -126,7 +128,7 @@ class OdometryNode(Node):
         self.theta += dtheta  # Update orientation
 
         # Normalize theta to stay within -pi to pi range
-        theta = (theta + math.pi) % (2 * math.pi) - math.pi
+        self.theta = (self.theta + math.pi) % (2 * math.pi) - math.pi
 
         # Create the odometry message
         odom_msg = Odometry()

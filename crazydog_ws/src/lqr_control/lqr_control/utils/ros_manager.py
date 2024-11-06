@@ -114,8 +114,8 @@ class RosManager(Node):
     def get_linear_vel_x(self):
         return self.odom.twist.twist.linear.x
     
-    def get_linear_pos_x(self):
-        return self.odom.pose.pose.position.x
+    def get_linear_pos_xy(self):
+        return [self.odom.pose.pose.position.x, self.odom.pose.pose.position.y]
 
     def euler_from_quaternion(self, x, y, z, w):
         t0 = +2.0 * (w * x + y * z)
