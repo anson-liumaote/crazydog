@@ -199,7 +199,7 @@ class robotController():
         start_time = time.time()
         X_list = []
         U_list = []
-        xy0 = np.array(self.ros_manager.get_linear_pos_xy())
+        # xy0 = np.array(self.ros_manager.get_linear_pos_xy())
 
         while self.running_flag:
             with self.ros_manager.ctrl_condition:
@@ -207,23 +207,27 @@ class robotController():
             t1 = time.time()
             dt = t1 - t0
             t0 = t1
-            X_ref[2, 0], yaw_ref = self.ros_manager.get_joy_vel()
+            X_ref[1, 0], yaw_ref = self.ros_manager.get_joy_vel()
             yaw, yaw_speed = self.ros_manager.get_yaw_orientation()
             yaw_torque = self.steering_pid.update(yaw_ref, yaw_speed, dt)
 
-            if X_ref[2, 0] == 0.0:
-                displacement = np.array(self.ros_manager.get_linear_pos_xy())-xy0
-                magnitude = np.linalg.norm(displacement)
-                reference_direction = np.array([np.cos(yaw), np.sin(yaw)])
-                dot_product = np.dot(displacement, reference_direction)
-                signed_magnitude = magnitude if dot_product >= 0 else -magnitude
-                print(yaw, displacement, signed_magnitude)
-                X[0, 0] = signed_magnitude
+            if X_ref[1, 0] == 0.0:
+                # displacement = np.array(self.ros_manager.get_linear_pos_xy())-xy0
+                # magnitude = np.linalg.norm(displacement)
+                # reference_direction = np.array([np.cos(yaw), np.sin(yaw)])
+                # dot_product = np.dot(displacement, reference_direction)
+                # signed_magnitude = magnitude if dot_product >= 0 else -magnitude
+                # print(yaw, displacement, signed_magnitude)
+                # X[0, 0] = signed_magnitude/
+                X[1, 0] = self.ros_manager.get_linear_vel_x()
+                X[0 ,0] += X[1, 0] * dt
+                # print(X[1, 0], X[0, 0])
             else:
-                X[0, 0] = 0.0
-                xy0 = np.array(self.ros_manager.get_linear_pos_xy())
+                X[1, 0] = self.ros_manager.get_linear_vel_x()
+                X[0 ,0] = 0.0
+                # xy0 = np.array(self.ros_manager.get_linear_pos_xy())
 
-            X[1, 0] = self.ros_manager.get_linear_vel_x()
+            
             # get IMU data
             X[2, 0], X[3, 0] = self.ros_manager.get_pitch_orientation()
             if abs(X[2, 0]) > math.radians(30):     # constrain
