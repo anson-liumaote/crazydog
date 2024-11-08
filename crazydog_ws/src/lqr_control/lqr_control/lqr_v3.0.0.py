@@ -29,7 +29,7 @@ class robotController():
     def __init__(self) -> None:
         rclpy.init()
         # K: [[ 2.97946709e-07  7.36131891e-05 -1.28508761e+01 -4.14185118e-01]]
-        Q = np.diag([100., 1., 100., 0.1])       # 1e-9, 0.1, 1.0, 1e-4
+        Q = np.diag([100., 10., 100., 0.1])       # 1e-9, 0.1, 1.0, 1e-4
         R = np.diag(np.diag([2.5]))   #0.02 2.5
         q = np.array([0., 0., 0., 0., 0., 0., 1.,
                             0., -1.18, 2.0, 1., 0.,
@@ -210,8 +210,8 @@ class robotController():
             X_ref[1, 0], yaw_ref = self.ros_manager.get_joy_vel()
             yaw, yaw_speed = self.ros_manager.get_yaw_orientation()
             yaw_torque = self.steering_pid.update(yaw_ref, yaw_speed, dt)
-
-            if X_ref[1, 0] == 0.0:
+            X[1, 0] = self.ros_manager.get_linear_vel_x()
+            if abs(X_ref[1, 0]) <= 0.0001:
                 # displacement = np.array(self.ros_manager.get_linear_pos_xy())-xy0
                 # magnitude = np.linalg.norm(displacement)
                 # reference_direction = np.array([np.cos(yaw), np.sin(yaw)])
@@ -219,11 +219,9 @@ class robotController():
                 # signed_magnitude = magnitude if dot_product >= 0 else -magnitude
                 # print(yaw, displacement, signed_magnitude)
                 # X[0, 0] = signed_magnitude/
-                X[1, 0] = self.ros_manager.get_linear_vel_x()
                 X[0 ,0] += X[1, 0] * dt
                 # print(X[1, 0], X[0, 0])
             else:
-                X[1, 0] = self.ros_manager.get_linear_vel_x()
                 X[0 ,0] = 0.0
                 # xy0 = np.array(self.ros_manager.get_linear_pos_xy())
 

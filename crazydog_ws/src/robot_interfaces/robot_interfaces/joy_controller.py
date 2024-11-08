@@ -15,7 +15,7 @@ class SpotControl(Node):
         self.body_pub = self.create_publisher(String, 'body_pose', 1)
 
         self.current_mode = " "
-        self.linear_x_scale = 0.2
+        self.linear_x_scale = 0.5
         self.angular_scale = 1.5
         feq = 300
         self.joy = None

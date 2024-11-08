@@ -65,8 +65,12 @@ class RosManager(Node):
             self.wheel_coordinate[0] -= 0.0001
 
     def vel_callback(self, msg: Twist):
-        self.joy_linear_vel = msg.linear.x
+        # self.joy_linear_vel = msg.linear.x
         self.joy_angular_vel = msg.angular.z
+        # Smooth velocity
+        alpha = 0.005
+        self.joy_linear_vel = (alpha * msg.linear.x) + ((1 - alpha) * self.joy_linear_vel)
+        # self.joy_angular_vel = (alpha * msg.angular.z) + ((1 - alpha) * self.joy_angular_vel)
 
     def status_callback(self, msg_list: LowState):
         self.motor_states = msg_list.motor_state
