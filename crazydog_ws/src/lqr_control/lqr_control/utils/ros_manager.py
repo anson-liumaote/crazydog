@@ -68,7 +68,7 @@ class RosManager(Node):
         # self.joy_linear_vel = msg.linear.x
         self.joy_angular_vel = msg.angular.z
         # Smooth velocity
-        alpha = 0.005
+        alpha = 0.1
         self.joy_linear_vel = (alpha * msg.linear.x) + ((1 - alpha) * self.joy_linear_vel)
         # self.joy_angular_vel = (alpha * msg.angular.z) + ((1 - alpha) * self.joy_angular_vel)
 
