@@ -24,9 +24,9 @@ class ModelInferenceNode(Node):
         self.base_ang_vel = np.zeros(3)
         self.projected_gravity = np.zeros(3)  # Update this based on your sensor data or estimation
         self.velocity_commands = np.zeros(3)  # Define as needed
-        self.joint_pos = np.zeros(2)
-        self.joint_vel = np.zeros(4)
-        self.actions = np.zeros(4)  # Initial actions
+        self.joint_pos = np.zeros(4)
+        self.joint_vel = np.zeros(6)
+        self.actions = np.zeros(6)  # Initial actions
 
     def get_projected_gravity(self, odom_msg:Odometry):
         # Extract the quaternion (x, y, z, w) from odometry orientation
