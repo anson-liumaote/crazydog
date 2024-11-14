@@ -3,7 +3,4 @@
 /crazydog_ws/log/
 /crazydog_ws/src/lqr_control/lqr_control/log/
 /crazydog_ws/src/robot_interfaces/robot_interfaces/unitree_actuator_sdk/
-/crazydog_ws/src/lqr_control/lqr_control/__pycache__/
-/crazydog_ws/src/mpc_control/mpc_control/__pycache__/
-/crazydog_ws/src/robot_interfaces/launch/__pycache__/
-/crazydog_ws/src/robot_interfaces/robot_interfaces/__pycache__/
+**/__pycache__/
