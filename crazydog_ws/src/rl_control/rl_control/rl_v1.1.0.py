@@ -25,6 +25,8 @@ LOCK_POS = [None, 2.76, 9.88, None, 5.44, -3.10]    # -2.75, 2.0
 THIGH_LENGTH = 0.215
 CALF_LENGTH = 0.215
 ORIGIN_BIAS = [-0.02235, 0.22494]   # bias between hip joint and origin in urdf
+MOTOR_ORIGIN_POS = [0.0, -4.6, 27.8, 0.0, 12.8, -24.4, 0.0, 0.0]
+SCALE = [6.33, 6.33, 6.33*1.6, 6.33, -6.33, -6.33*1.6, 1.0, 1.0]
 
 class robotController():
     def __init__(self) -> None:
@@ -100,7 +102,7 @@ class robotController():
     def locklegs(self):
         self.ros_manager.wheel_coordinate = [-0.0639-ORIGIN_BIAS[0], -0.003637-ORIGIN_BIAS[1]]
         theta1_err, theta2_err = self.get_angle_error(self.ros_manager.wheel_coordinate)     # lock legs coordinate [x, y] (hip joint coordinate (0.0742, 0))
-        while self.ros_manager.motor_states[1].q <= MOTOR_INIT_POS[1]-theta1_err*6.33 and self.ros_manager.motor_states[4].q >= MOTOR_INIT_POS[4]+theta1_err*6.33:            
+        while self.ros_manager.get_joint_pos('thigh_l') <= 1.271 and self.ros_manager.get_joint_pos('thigh_r') <= 1.271:            
             # self.set_motor_cmd(motor_number=1, kp=2, kd=0.02, position=self.ros_manager.motor_states[1].q+0.1, torque=0, velocity=0)
             # self.set_motor_cmd(motor_number=4, kp=2, kd=0.02, position=self.ros_manager.motor_states[4].q-0.1, torque=0, velocity=0)
             self.set_motor_cmd(motor_number=1, kp=0, kd=0.05, position=0, torque=0, velocity=0.2)
@@ -108,11 +110,11 @@ class robotController():
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.001)
         for i in range(10):                        
-            self.set_motor_cmd(motor_number=1, kp=i, kd=0.12, position=MOTOR_INIT_POS[1]-theta1_err*6.33)
-            self.set_motor_cmd(motor_number=4, kp=i, kd=0.12, position=MOTOR_INIT_POS[4]+theta1_err*6.33)
+            self.set_motor_cmd(motor_number=1, kp=i, kd=0.12, position=self.ros_manager.motor_states[1].q)
+            self.set_motor_cmd(motor_number=4, kp=i, kd=0.12, position=self.ros_manager.motor_states[4].q)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.01)
-        while self.ros_manager.motor_states[2].q <= MOTOR_INIT_POS[2]-theta2_err*6.33*1.6 and self.ros_manager.motor_states[5].q >= MOTOR_INIT_POS[5]+theta2_err*6.33*1.6:
+        while self.ros_manager.get_joint_pos('calf_l') <= -2.12773 and self.ros_manager.get_joint_pos('calf_r') <= -2.12773:
             # self.set_motor_cmd(motor_number=2, kp=25, kd=0.02, position=self.ros_manager.motor_states[2].q+0.05, torque=0, velocity=0)
             # self.set_motor_cmd(motor_number=5, kp=25, kd=0.02, position=self.ros_manager.motor_states[5].q-0.05, torque=0, velocity=0)
             self.set_motor_cmd(motor_number=2, kp=0, kd=0, position=0, torque=0.6, velocity=0)
@@ -120,8 +122,8 @@ class robotController():
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.001)
         for i in range(10):                        
-            self.set_motor_cmd(motor_number=2, kp=i, kd=0.15, position=MOTOR_INIT_POS[2]-theta2_err*6.33*1.6)
-            self.set_motor_cmd(motor_number=5, kp=i, kd=0.15, position=MOTOR_INIT_POS[5]+theta2_err*6.33*1.6)
+            self.set_motor_cmd(motor_number=2, kp=i, kd=0.15, position=self.ros_manager.motor_states[2].q)
+            self.set_motor_cmd(motor_number=5, kp=i, kd=0.15, position=self.ros_manager.motor_states[5].q)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.01)        
 
@@ -164,8 +166,8 @@ class robotController():
             self.set_motor_cmd(motor_number=2 ,kp=0, kd=0, position=0, torque=actions[2]/6.33, velocity=0)
             self.set_motor_cmd(motor_number=4, kp=0, kd=0, position=0, torque=-actions[3]/6.33/1.6, velocity=0)
             self.set_motor_cmd(motor_number=5 ,kp=0, kd=0, position=0, torque=-actions[1]/6.33, velocity=0)
-            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-            self.ros_manager.send_foc_command(actions[4], actions[5])
+            # self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+            # self.ros_manager.send_foc_command(actions[4], actions[5])
 
 
     def disableController(self):

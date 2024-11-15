@@ -129,7 +129,7 @@ class UnitreeInterface(Node):
         self.jointstate_msg.position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.jointstate_msg.velocity = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-    def command_callback(self, msg):
+    def command_callback(self, msg:LowCommand):
         for id, cmd in enumerate(msg.motor_cmd):
             motor_number = id
             torque = cmd.tau
