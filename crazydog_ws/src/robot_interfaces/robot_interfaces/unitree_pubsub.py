@@ -144,10 +144,10 @@ class UnitreeInterface(Node):
         self.jointstate_msg.header.stamp = self.get_clock().now().to_msg()
         if msg.data[0] == 513.:   # motor left
             self.jointstate_msg.position[6] = -msg.data[1]
-            self.jointstate_msg.velocity[6] = -msg.data[2] * WHEEL_RADIUS * (2 * math.pi / 60)
+            self.jointstate_msg.velocity[6] = -msg.data[2] * (2 * math.pi / 60)
         elif msg.data[0] == 514.: # motor right
             self.jointstate_msg.position[7] = msg.data[1]
-            self.jointstate_msg.velocity[7] = msg.data[2] * WHEEL_RADIUS * (2 * math.pi / 60)
+            self.jointstate_msg.velocity[7] = msg.data[2] * (2 * math.pi / 60)
         self.jointstate_pub.publish(self.jointstate_msg)
 
     def recv_timer_callback(self):

@@ -47,7 +47,7 @@ class OdometryNode(Node):
     def imu_callback(self, msg):
         try:
             pos_left, pos_right = self.jointstate.position[6], self.jointstate.position[7]
-            v_left, v_right = self.jointstate.velocity[6], self.jointstate.velocity[7]
+            v_left, v_right = self.jointstate.velocity[6] * WHEEL_RADIUS, self.jointstate.velocity[7] * WHEEL_RADIUS
             self.publish_odometry(pos_left, pos_right, v_left, v_right, msg)
         except Exception as e:
             self.get_logger().warning(f'{e}')
