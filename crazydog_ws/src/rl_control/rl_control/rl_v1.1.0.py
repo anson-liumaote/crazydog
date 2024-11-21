@@ -51,12 +51,18 @@ class robotController():
             return True
         else: 
             return False
+        
+    def inverse_scaling(self, id, pos, vel):
+        position = pos * SCALE[id] + MOTOR_ORIGIN_POS[id]
+        velocity = vel * SCALE[id]
+        return float(position), float(velocity)
             
     def set_motor_cmd(self, motor_number, kp, kd, position, torque=0, velocity=0):
         torque = max(-1, min(torque, 1))
         cmd = MotorCommand()
         cmd.q = float(position)
         cmd.dq = float(velocity)
+        # cmd.q, cmd.dq = self.inverse_scaling(position, velocity)
         cmd.tau = float(torque)
         cmd.kp = float(kp)
         cmd.kd = float(kd)
@@ -142,24 +148,23 @@ class robotController():
             with self.ros_manager.ctrl_condition:
                 self.ros_manager.ctrl_condition.wait()
             # Prepare the input as a single (22,) array
-            if count%2==0:
-                input_data = np.concatenate([
-                    self.ros_manager.base_lin_vel,
-                    self.ros_manager.base_ang_vel,
-                    self.ros_manager.projected_gravity,
-                    self.ros_manager.velocity_commands,
-                    self.ros_manager.joint_pos,
-                    self.ros_manager.joint_vel,
-                    actions
-                ]).astype(np.float32).reshape(1, -1)  # Model expects (1, 22)
+            input_data = np.concatenate([
+                self.ros_manager.base_lin_vel,
+                self.ros_manager.base_ang_vel,
+                self.ros_manager.projected_gravity,
+                self.ros_manager.velocity_commands,
+                self.ros_manager.joint_pos,
+                self.ros_manager.joint_vel,
+                actions
+            ]).astype(np.float32).reshape(1, -1)  # Model expects (1, 22)
 
-                # Run inference
-                print(input_data)
-                input_name = self.ort_session.get_inputs()[0].name
-                outputs = self.ort_session.run(None, {input_name: input_data})
-                
-                # Process output (e.g., actions) as needed for control
-                actions = outputs[0].flatten()  # Assuming model output is (1, 4) for actions
+            # Run inference
+            print(input_data)
+            input_name = self.ort_session.get_inputs()[0].name
+            outputs = self.ort_session.run(None, {input_name: input_data})
+            
+            # Process output (e.g., actions) as needed for control
+            actions = outputs[0].flatten()  # Assuming model output is (1, 4) for actions
 
             # Optionally publish or use actions to control the robot
             print(actions)
@@ -167,8 +172,8 @@ class robotController():
             self.set_motor_cmd(motor_number=2 ,kp=0, kd=0, position=0, torque=actions[2]/6.33/1.6, velocity=0)
             self.set_motor_cmd(motor_number=4, kp=0, kd=0, position=0, torque=-actions[1]/6.33, velocity=0)
             self.set_motor_cmd(motor_number=5 ,kp=0, kd=0, position=0, torque=-actions[3]/6.33/1.6, velocity=0)
-            # self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-            # self.ros_manager.send_foc_command(actions[4], actions[5])
+            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+            self.ros_manager.send_foc_command(actions[4], actions[5])
             count += 1
 
 

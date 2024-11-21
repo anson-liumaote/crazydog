@@ -27,6 +27,7 @@ class RosManager(Node):
         self.foc_command_publisher = self.create_publisher(Float32MultiArray, 'foc_command', 1)
         self.imu_monitor = self.create_publisher(Float32, 'imu_monitor', 1)
         self.tau_monitor = self.create_publisher(Float32, 'tau_monitor', 1)
+        self.control_timer = self.create_timer(0.02, self.control_timer_callback) 
         self.row = 0
         self.row_last = 0
         self.row_dot = 0
@@ -56,15 +57,18 @@ class RosManager(Node):
         self.joint_pos = np.zeros(4)
         self.joint_vel = np.zeros(6)
 
+    def control_timer_callback(self):
+        # notify inference ctrl
+        with self.ctrl_condition:
+            self.ctrl_condition.notify()
+
     def jointstate_callback(self, msg: JointState):
         # Assuming the first two are positional joints, and next four are velocity joints
         self.joint_pos = np.array([msg.position[1], msg.position[4], msg.position[2], msg.position[5]])-np.array([1.271, 1.271, -2.12773, -2.12773])
         self.joint_vel = np.array([msg.velocity[1], msg.velocity[2], msg.velocity[6], msg.velocity[4], msg.velocity[5], msg.velocity[7]])
         # old api
         self.joint_state = msg
-        # notify inference ctrl
-        with self.ctrl_condition:
-            self.ctrl_condition.notify()
+        
 
     def odom_callback(self, msg: Odometry):
         # Extract linear and angular velocity from odometry message
