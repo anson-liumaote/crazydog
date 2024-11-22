@@ -11,22 +11,22 @@
 git clone https://github.com/anson-liumaote/crazydog.git
 ```
 
-1. download Unitree actuator sdk
+3. download Unitree actuator sdk
 
 ```bash
 cd crazydog_ws/src/robot_interfaces/robot_interfaces/
 git clone https://github.com/unitreerobotics/unitree_actuator_sdk.git
 ```
 
-1. follow Unitree actuator sdk README to build the sdk
-2. build ros2 packages
+4. follow Unitree actuator sdk README to build the sdk
+5. build ros2 packages
 
 ```bash
 cd crazydog_ws
 colcon build --packages-select robot_interfaces unitree_msgs --symlink-install
 ```
 
-1. setup CAN interfaces
+6. setup CAN interfaces
 
 ```bash
 cd crazydog_ws/src/robot_interfaces/
@@ -34,10 +34,10 @@ sudo chmod +x setup_can.sh
 ./setup_can.sh
 ```
 
-1. source
+7. source
 
 ```bash
 source install/setup.bash
 ```
 
-1. run the python files
+8. run the python files
