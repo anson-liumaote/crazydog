@@ -35,8 +35,6 @@ class robotController():
         q = np.array([0., 0., 0., 0., 0., 0., 1.,
                             0., -1.18, 2.0, 1., 0.,
                             0., -1.18, 2.0, 1., 0.])
-        adva_k = np.array([[-7.7649,-0.8153 ,-1.3727 ,-1.4729 ,3.5959 ,0.5007],
-                          [5.3771 ,0.3745 ,0.6957  ,0.6466 ,9.6974 ,0.8469]])
         #[-7.2468 ,-0.9553 ,-0.9533 ,-1.4048 ,3.5574 ,0.5730],
         #[4.1840 ,0.1985 ,-0.0127  ,-0.0743 ,7.8870 ,0.7830]
         # ([[-6.8033 ,-0.7575 ,-0.7423 ,-1.1602 ,3.3082 ,0.5328],
@@ -70,7 +68,6 @@ class robotController():
                                                   max_l=0.46,
                                                   min_l=0.07,
                                                   slice_w=0.03,
-                                                  advance_lqr_K=adva_k,
                                                   adv_lqr_fitting=fitting_value)
         self.lqr_controller.change_K(self.l_bar)
         # l_bar from 0.1 to 0.37
@@ -78,8 +75,8 @@ class robotController():
         self.hip_D = 0.55
         self.turn_P = 0.0297
         self.turn_D = 0.00011
-        self.knee_P = 0.1
-        self.knee_D = 0.05
+        self.leg_P = 25
+        self.leg_D = 0.1
 
         self.phi_list = []
         self.theta_list = []
@@ -96,8 +93,8 @@ class robotController():
         self.adva_running_flag = False
         self.turning_pid2 = PID(self.turn_P, 0, self.turn_D)
         self.hip_pid = PID(self.hip_P ,0, self.hip_D)
-        self.knee_pid1 = PID(self.knee_P,0, self.knee_D)
-        self.knee_pid2 = PID(self.knee_P,0, self.knee_D)
+        self.leg_pid_l = PID(self.leg_P ,0, self.leg_D)
+        self.leg_pid_r = PID(self.leg_P ,0, self.leg_D)
         self.cmd_list = LowCommand()
         time.sleep(2)
 
@@ -121,6 +118,19 @@ class robotController():
         cmd.kp = float(kp)
         cmd.kd = float(kd)
         self.cmd_list.motor_cmd[motor_number] = cmd
+
+    def inverse_kinematics(self, x, y, L1=THIGH_LENGTH, L2=CALF_LENGTH):
+        # 計算 d    
+        d = np.sqrt(x**2 + y**2)
+        # 計算 theta2
+        cos_theta2 = (x**2 + y**2 - L1**2 - L2**2) / (2 * L1 * L2)
+        theta2 = np.arccos(cos_theta2)
+        
+        # 計算 theta1
+        theta1 = np.arctan2(y, x) - np.arctan2(L2 * np.sin(theta2), L1 + L2 * np.cos(theta2))
+    
+        return theta1, theta2
+    
 
     def init_unitree_motor(self):
         if self.check_target_pos(1) and self.check_target_pos(4):
@@ -178,18 +188,6 @@ class robotController():
         plt.tight_layout()
         plt.savefig('advlqr_controller_output.png')
         print("The image has been saved as 'pid_controller_output.png'")
-    
-    def inverse_kinematics(self, x, y, L1=THIGH_LENGTH, L2=CALF_LENGTH):
-        # 計算 d    
-        d = np.sqrt(x**2 + y**2)
-        # 計算 theta2
-        cos_theta2 = (x**2 + y**2 - L1**2 - L2**2) / (2 * L1 * L2)
-        theta2 = np.arccos(cos_theta2)
-        
-        # 計算 theta1
-        theta1 = np.arctan2(y, x) - np.arctan2(L2 * np.sin(theta2), L1 + L2 * np.cos(theta2))
-    
-        return theta1, theta2
     
     def get_angle_error(self, axis):
         theta1, theta2 = self.inverse_kinematics(axis[0], axis[1])
@@ -284,11 +282,6 @@ class robotController():
         yaw_speed = delta_speed / WHEEL_DISTANCE
         return yaw_speed
     
-    def F_torque(self, knee_angle, F):
-
-        torque = F*math.cos(math.pi/2+knee_angle/2)*CALF_LENGTH
-
-        return torque
     
     def kalman_filter_data_fusion(self, dt, x, P): 
         sigma_v = 0.05 #速度噪聲方差
@@ -307,6 +300,13 @@ class robotController():
         x = x_hat + K @ (x - H @ x_hat) #後驗估計
         P = (np.eye(2) - K @ H) @ P #更新誤差協方差
         return x, P
+    
+    def VMC(self, knee_angle, force, Tp):
+        f = (0.3040*math.sin(knee_angle))/(2*(1-math.cos(knee_angle))**0.5)
+        J = np.array([[0, 1],[f, 0.5]])
+        F = np.array([[force],[Tp]])
+        T = J @ F
+        return T[0, 0] , T[1, 0]
 
     def adva_controller(self):
         X = np.zeros((6, 1))  # X = [theta, d_theta, x, d_x, phi, d_phi]
@@ -320,8 +320,8 @@ class robotController():
         disp_s = 0    
         L_knee_angle_inital = 1.12
         R_knee_angle_inital = 2.25
-        Leg_desire = 0.215
-        feed_forward = 55.625
+        desire_knee_angle = math.pi/3
+        feed_forward = 220
 
         while self.adva_running_flag==True and self.running_flag==False:
             with self.ros_manager.ctrl_condition:
@@ -334,7 +334,7 @@ class robotController():
             speed = speed*15
             if abs(X_ref[2, 0]-X[2, 0]) > 1.5: #限制防止位移過度累加
                 speed = 0
-            disp_s = disp_s + speed*dt
+            disp_s = disp_s + speed*dt 
             X_ref[2, 0] = disp_s
             yaw_ref = yaw_ref*5
             # print(X_ref[3, 0],yaw_ref)
@@ -357,16 +357,7 @@ class robotController():
             L_knee_angle = (self.ros_manager.motor_states[2].q - L_knee_angle_inital)/(6.33*1.6)
             R_knee_angle = (R_knee_angle_inital - self.ros_manager.motor_states[5].q)/(6.33*1.6)
             avg_knee_angle = (L_knee_angle + R_knee_angle)/2
-            L_leg_long = math.sin(L_knee_angle/2)*(THIGH_LENGTH*2)
-            R_leg_long = math.sin(R_knee_angle/2)*(THIGH_LENGTH*2)
 
-            L_F = self.knee_pid1.update(Leg_desire,L_leg_long, dt) + feed_forward
-            R_F = self.knee_pid1.update(Leg_desire,R_leg_long, dt) + feed_forward
-            
-            L_knee_torque = self.F_torque(L_knee_angle, L_F)
-            R_knee_torque = self.F_torque(R_knee_angle, R_F) 
-
-            # U = np.copy(self.lqr_controller.advance_lqr_control(X,X_ref))
             U = np.copy(self.lqr_controller.adv_lqr_change_k(X, X_ref, avg_knee_angle))
 
             yaw_speed = self.get_yaw_speed(foc_status_left.speed, foc_status_right.speed)
@@ -374,27 +365,38 @@ class robotController():
             output = self.turning_pid2.update(target,yaw_speed, dt)
             angle_error = Lleg_position - Rleg_position
             output2 = self.hip_pid.update(0, angle_error, dt)
+            knee_L_force = self.leg_pid_l.update(desire_knee_angle, L_knee_angle, dt)
+            knee_R_force = self.leg_pid_l.update(desire_knee_angle, R_knee_angle, dt)
+
+            knee_L_force = knee_L_force + feed_forward
+            knee_R_force = knee_R_force + feed_forward
+
+            # print(knee_L_force, knee_R_force)
+
             U_wr = U[0, 0] - output
             U_wl = U[0, 0] + output
             U_tr = U[1, 0] + output2
             U_tl = U[1, 0] - output2
-            
-            # print(U[0, 0], U[1, 0])
-            motor_command_right = U_wr
-            motor_command_left = U_wl
-            thigh_command_right = U_tr
-            thigh_command_left = U_tl
+
+            T1 , T2 = self.VMC(L_knee_angle,knee_L_force, U_tl)
+            T3 , T4 = self.VMC(R_knee_angle,knee_R_force, U_tr)
+
+            print(T2, T4)
+
             # soft constrain
-            motor_command_left = max(-1.8, min(motor_command_left, 1.8))
-            motor_command_right = max(-1.8, min(motor_command_right, 1.8))
-            thigh_command_right = max(-2.5, min(thigh_command_right, 2.5))
-            thigh_command_left = max(-2.5, min(thigh_command_left, 2.5))
+            motor_command_left = max(-1.8, min( U_wl, 1.8))
+            motor_command_right = max(-1.8, min( U_wr, 1.8))
+            thigh_command_right = max(-2.5, min(T3, 2.5))
+            thigh_command_left = max(-2.5, min(T1, 2.5))
+            knee_command_right = max(-3.5, min(T4, 3.5))
+            knee_command_left = max(-3.5, min(T2, 3.5))
+            # print(T2, T4)
 
             self.set_motor_cmd(motor_number=4,torque=-thigh_command_right/6.33)
             self.set_motor_cmd(motor_number=1,torque=thigh_command_left/6.33)
-            # self.set_motor_cmd(motor_number=2,torque=L_knee_torque/(6.33*1.6))
-            # self.set_motor_cmd(motor_number=5,torque=-R_knee_torque/(6.33*1.6))
-            print(L_knee_torque,R_knee_torque)
+            self.set_motor_cmd(motor_number=5,torque=-knee_command_right/(6.33*1.6))
+            self.set_motor_cmd(motor_number=2,torque=knee_command_left/(6.33*1.6))
+            # print(L_knee_torque,R_knee_torque)
 
             self.ros_manager.send_foc_command(motor_command_left , motor_command_right)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)

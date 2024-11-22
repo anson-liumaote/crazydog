@@ -11,7 +11,7 @@ import sys
 import traceback
 import math
 import numpy as np
-from LQR_pin import InvertedPendulumLQR
+from src.lqr_control.lqr_control.utils.LQR_pin import InvertedPendulumLQR
 from sensor_msgs.msg import Imu
 import matplotlib.pyplot as plt
 

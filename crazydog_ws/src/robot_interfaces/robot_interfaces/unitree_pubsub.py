@@ -207,6 +207,7 @@ class UnitreeInterface(Node):
             msg = MotorState()
             msg.q = float(motor.data.q)
             msg.dq = float(motor.data.dq)
+            msg.tau = float(motor.data.tau)
             msg.temperature = int(motor.data.temp)
             id = motor.id
             msg_list.motor_state[id] = msg
@@ -216,6 +217,7 @@ class UnitreeInterface(Node):
             msg = MotorState()
             msg.q = float(motor.data.q)
             msg.dq = float(motor.data.dq)
+            msg.tau = float(motor.data.tau)
             msg.temperature = int(motor.data.temp)
             id = motor.id
             msg_list.motor_state[id] = msg

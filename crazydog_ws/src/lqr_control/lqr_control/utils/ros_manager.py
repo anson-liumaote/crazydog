@@ -29,6 +29,7 @@ class RosTopicManager(Node):
         self.row_dot = 0
         self.yaw = 0
         self.yaw_dot = 0
+        self.y_linear_acc = 0
         self.dt = 1/300
         self.joy_linear_vel = 0.
         self.joy_angular_vel = 0.
@@ -91,12 +92,13 @@ class RosTopicManager(Node):
         qua_y = msg.orientation.y
         qua_z = msg.orientation.z
         qua_w = msg.orientation.w
+        a_y = msg.linear_acceleration.y
         # *(180/math.pi)+1.5
         t0 = +2.0 * (qua_w * qua_x + qua_y * qua_z)
         t1 = +1.0 - 2.0 * (qua_x * qua_x + qua_y * qua_y)
         self.row = math.atan2(t0, t1)
         self.yaw = math.atan2(2 * (qua_w * qua_z + qua_x * qua_y), 1 - 2 * (qua_y**2 + qua_z**2))
-        
+        self.y_linear_acc = a_y
 
         # self.pitch = -(math.asin(2 * (qua_w * qua_y - qua_z * qua_x)) - self.pitch_bias) 
         self.row_dot = msg.angular_velocity.x
@@ -114,6 +116,9 @@ class RosTopicManager(Node):
 
     def get_orientation(self):
         return -self.row, -self.row_dot,
+
+    def get_linear_acc(self):
+        return -self.y_linear_acc
     
     def vel_callback(self, msg):
         self.joy_linear_vel = msg.linear.x
