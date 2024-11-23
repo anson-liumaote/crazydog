@@ -333,7 +333,7 @@ class robotController():
             x[1, 0] = self.ros_manager.get_linear_acc()
             x, P_1 = self.kalman_filter_data_fusion(dt, x, P_1)
             X[3, 0] = x[0, 0]
-            X[4, 0], X[5, 0] = self.ros_manager.get_orientation()
+            X[4, 0], X[5, 0], roll = self.ros_manager.get_orientation()
             X[4, 0], X[5, 0] = -X[4, 0], -X[5, 0]
             X[2, 0] = X_last[2, 0] + X[3, 0] * dt
             Lleg_position = (12.786 - self.ros_manager.motor_states[4].q)/6.33 - math.radians(60)-X[4, 0]-leg_bias

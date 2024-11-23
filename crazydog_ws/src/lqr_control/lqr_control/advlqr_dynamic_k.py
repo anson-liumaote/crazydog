@@ -39,18 +39,18 @@ class robotController():
         #[4.1840 ,0.1985 ,-0.0127  ,-0.0743 ,7.8870 ,0.7830]
         # ([[-6.8033 ,-0.7575 ,-0.7423 ,-1.1602 ,3.3082 ,0.5328],
         #  [4.4794  ,0.0089 ,0.1080  ,0.0777 ,7.7223 ,0.7510]])
-        fitting_value = np.array([[ -0.37462,        3.1378,       -9.5696,       -0.7371],
-                                    [0.0021195,       0.14121,      -0.96219,       0.03545],
-                                    [-0.063444,       0.43295,       -1.0218,      -0.70091],
-                                    [-0.051425,       0.37232,      -0.96196,       -0.8118],
-                                    [-0.13839,        1.2337,       -3.9122,        6.5015],
-                                    [-0.0075103,      0.077901,      -0.27634,       0.71328],
-                                    [0.68635,       -4.0053,        7.1901,         1.395],
-                                    [0.063134,      -0.31872,       0.33864,       0.29204],
-                                    [0.11404,      -0.51882,       0.40544,       0.69421],
-                                    [0.10147,      -0.43992,       0.23429,       0.75352],
-                                    [0.33115,       -2.4097,        6.1448,        5.5111],
-                                    [0.017523,      -0.15763,       0.49113,       0.48556]])
+        fitting_value = np.array([[-0.394199, 3.22483, -9.64224, -0.711913],
+                                    [0.00899372, 0.100871, -0.88912, 0.0778905],
+                                    [-0.0647991, 0.421161, -0.934165, -0.855485],
+                                    [-0.0537338, 0.372016, -0.917039, -0.889542],
+                                    [-0.20152, 1.61357, -4.64483, 6.86091],
+                                    [-0.0132937, 0.115482, -0.357964, 0.768612],
+                                    [0.326711, -1.76112, 2.56376, 4.32243],
+                                    [0.0388349, -0.188105, 0.14162, 0.225827],
+                                    [-0.121539, 0.923989, -2.50654, 2.63394],
+                                    [-0.113353, 0.864698, -2.36284, 2.41836],
+                                    [0.560048, -3.71428, 8.47673, 4.33087],
+                                    [0.0627135, -0.426498, 1.00949, 0.168704]])
         self.robot = urdf_loader.loadRobotModel(urdf_path=URDF_PATH)
         self.robot.pos = q
         self.com, self.l_bar = self.robot.calculateCom(plot=False)
@@ -75,8 +75,10 @@ class robotController():
         self.hip_D = 0.55
         self.turn_P = 0.0297
         self.turn_D = 0.00011
-        self.leg_P = 25
-        self.leg_D = 0.1
+        self.leg_P = 30
+        self.leg_I = 0.2
+        self.leg_D = 0.15
+        self.roll_p = 400
 
         self.phi_list = []
         self.theta_list = []
@@ -93,8 +95,9 @@ class robotController():
         self.adva_running_flag = False
         self.turning_pid2 = PID(self.turn_P, 0, self.turn_D)
         self.hip_pid = PID(self.hip_P ,0, self.hip_D)
-        self.leg_pid_l = PID(self.leg_P ,0, self.leg_D)
-        self.leg_pid_r = PID(self.leg_P ,0, self.leg_D)
+        self.leg_pid_l = PID(self.leg_P ,self.leg_I , self.leg_D)
+        self.leg_pid_r = PID(self.leg_P ,self.leg_I , self.leg_D)
+        self.roll_pid = PID(self.roll_p,0,0)
         self.cmd_list = LowCommand()
         time.sleep(2)
 
@@ -219,8 +222,8 @@ class robotController():
         while self.ros_manager.motor_states[2].q <= MOTOR_INIT_POS[2]-theta2_err*6.33*1.6 and self.ros_manager.motor_states[5].q >= MOTOR_INIT_POS[5]+theta2_err*6.33*1.6:
             # self.set_motor_cmd(motor_number=2, kp=25, kd=0.02, position=self.ros_manager.motor_states[2].q+0.05, torque=0, velocity=0)
             # self.set_motor_cmd(motor_number=5, kp=25, kd=0.02, position=self.ros_manager.motor_states[5].q-0.05, torque=0, velocity=0)
-            self.set_motor_cmd(motor_number=2, kp=0, kd=0, position=0, torque=0.6, velocity=0)
-            self.set_motor_cmd(motor_number=5 ,kp=0, kd=0, position=0, torque=-0.6, velocity=0)
+            self.set_motor_cmd(motor_number=2, kp=0, kd=0, position=0, torque=0.65, velocity=0)
+            self.set_motor_cmd(motor_number=5 ,kp=0, kd=0, position=0, torque=-0.65, velocity=0)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.001)
         for i in range(3):                        
@@ -284,9 +287,9 @@ class robotController():
     
     
     def kalman_filter_data_fusion(self, dt, x, P): 
-        sigma_v = 0.05 #速度噪聲方差
-        sigma_a = 0.05 #加速度噪聲方差
-        sigma_process = 1 #過程噪聲方差
+        sigma_v = 0.01 #速度噪聲方差
+        sigma_a = 0.08 #加速度噪聲方差
+        sigma_process = 0.1 #過程噪聲方差
         F = np.array([[1, dt],[0, 1]]) #狀態轉移矩陣
         H = np.eye(2) #量測矩陣
         Q = np.array([[sigma_v, 0],[0, sigma_a]]) #量測協方差矩陣
@@ -321,7 +324,7 @@ class robotController():
         L_knee_angle_inital = 1.12
         R_knee_angle_inital = 2.25
         desire_knee_angle = math.pi/3
-        feed_forward = 220
+        feed_forward = 40
 
         while self.adva_running_flag==True and self.running_flag==False:
             with self.ros_manager.ctrl_condition:
@@ -343,10 +346,10 @@ class robotController():
             ws_r = foc_status_right.speed * (2*np.pi*WHEEL_RADIUS)/60
             ws_l = foc_status_left.speed * (2*np.pi*WHEEL_RADIUS)/60
             x[0, 0] = (ws_l + ws_r)/2
-            x[1, 0] = self.ros_manager.get_linear_acc()
-            x, P_1 = self.kalman_filter_data_fusion(dt, x, P_1)
+            x[1, 0] = self.ros_manager.get_linear_acc() 
+            x, P_1 = self.kalman_filter_data_fusion(dt, x, P_1) #kalman filter
             X[3, 0] = x[0, 0]
-            X[4, 0], X[5, 0] = self.ros_manager.get_orientation()
+            X[4, 0], X[5, 0], roll = self.ros_manager.get_orientation()
             X[4, 0], X[5, 0] = -X[4, 0], -X[5, 0]
             X[2, 0] = X_last[2, 0] + X[3, 0] * dt
             Lleg_position = (12.786 - self.ros_manager.motor_states[4].q)/6.33 - math.radians(60)-X[4, 0]-leg_bias
@@ -354,8 +357,8 @@ class robotController():
             X[0, 0] = (Lleg_position+Rleg_position)/2
             X[1, 0] = (-self.ros_manager.motor_states[4].dq+self.ros_manager.motor_states[1].dq)/(6.33*2)
 
-            L_knee_angle = (self.ros_manager.motor_states[2].q - L_knee_angle_inital)/(6.33*1.6)
-            R_knee_angle = (R_knee_angle_inital - self.ros_manager.motor_states[5].q)/(6.33*1.6)
+            L_knee_angle = (self.ros_manager.motor_states[2].q - L_knee_angle_inital)/(6.33*1.6)+0.524 #加上膝關節原始角度
+            R_knee_angle = (R_knee_angle_inital - self.ros_manager.motor_states[5].q)/(6.33*1.6)+0.524
             avg_knee_angle = (L_knee_angle + R_knee_angle)/2
 
             U = np.copy(self.lqr_controller.adv_lqr_change_k(X, X_ref, avg_knee_angle))
@@ -366,38 +369,33 @@ class robotController():
             angle_error = Lleg_position - Rleg_position
             output2 = self.hip_pid.update(0, angle_error, dt)
             knee_L_force = self.leg_pid_l.update(desire_knee_angle, L_knee_angle, dt)
-            knee_R_force = self.leg_pid_l.update(desire_knee_angle, R_knee_angle, dt)
+            knee_R_force = self.leg_pid_r.update(desire_knee_angle, R_knee_angle, dt)
+            roll_add = self.roll_pid.update(0, roll, dt)
 
-            knee_L_force = knee_L_force + feed_forward
-            knee_R_force = knee_R_force + feed_forward
-
-            # print(knee_L_force, knee_R_force)
-
+            knee_L_force = knee_L_force + feed_forward - roll_add
+            knee_R_force = knee_R_force + feed_forward + roll_add
             U_wr = U[0, 0] - output
             U_wl = U[0, 0] + output
             U_tr = U[1, 0] + output2
             U_tl = U[1, 0] - output2
 
+            # vmc計算
             T1 , T2 = self.VMC(L_knee_angle,knee_L_force, U_tl)
             T3 , T4 = self.VMC(R_knee_angle,knee_R_force, U_tr)
-
-            print(T2, T4)
-
             # soft constrain
             motor_command_left = max(-1.8, min( U_wl, 1.8))
             motor_command_right = max(-1.8, min( U_wr, 1.8))
             thigh_command_right = max(-2.5, min(T3, 2.5))
             thigh_command_left = max(-2.5, min(T1, 2.5))
-            knee_command_right = max(-3.5, min(T4, 3.5))
-            knee_command_left = max(-3.5, min(T2, 3.5))
-            # print(T2, T4)
+            knee_command_right = max(-13, min(T4, 13))
+            knee_command_left = max(-13, min(T2, 13))
 
+            print(knee_command_right, knee_command_left)
             self.set_motor_cmd(motor_number=4,torque=-thigh_command_right/6.33)
             self.set_motor_cmd(motor_number=1,torque=thigh_command_left/6.33)
             self.set_motor_cmd(motor_number=5,torque=-knee_command_right/(6.33*1.6))
             self.set_motor_cmd(motor_number=2,torque=knee_command_left/(6.33*1.6))
             # print(L_knee_torque,R_knee_torque)
-
             self.ros_manager.send_foc_command(motor_command_left , motor_command_right)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
 
@@ -408,7 +406,7 @@ class robotController():
             self.x_dot_ref_list.append(speed)
             self.time_list.append(current_time)
 
-            if abs(X[4, 0]) > math.radians(25) or abs(Lleg_position+X[4, 0]) > math.radians(45) or abs(Rleg_position+X[4, 0]) > math.radians(45):     # constrain
+            if abs(X[4, 0]) > math.radians(25) or abs(Lleg_position+X[4, 0]) > math.radians(45) or abs(Rleg_position+X[4, 0]) > math.radians(45) or abs(X_ref[2, 0]-X[2, 0]) > 2.5:     # constrain
                 
                 # print("out of constrain",X[0, 0])
                 self.set_motor_cmd(motor_number=4,torque=0,kd = 0.01)
@@ -419,11 +417,23 @@ class robotController():
                 self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
                 self.adva_running_flag = False
                 break
+        self.ros_manager.send_foc_command(0.0, 0.0)
+        self.set_motor_cmd(motor_number=4,torque=0,kd = 0.01)
+        self.set_motor_cmd(motor_number=1,torque=0,kd = 0.01)
+        self.set_motor_cmd(motor_number=2,torque=0,kd = 0.01)
+        self.set_motor_cmd(motor_number=5,torque=0,kd = 0.01)
+        self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+
 
     def disableController(self):
         self.running_flag = False
         self.adva_running_flag = False
         self.ros_manager.send_foc_command(0.0, 0.0)
+        self.set_motor_cmd(motor_number=4,torque=0,kd = 0.05)
+        self.set_motor_cmd(motor_number=1,torque=0,kd = 0.05)
+        self.set_motor_cmd(motor_number=2,torque=0,kd = 0.05)
+        self.set_motor_cmd(motor_number=5,torque=0,kd = 0.05)
+        self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
         if self.lqr_thread is not None:
             self.lqr_thread.join()
             print('lqr_joined')

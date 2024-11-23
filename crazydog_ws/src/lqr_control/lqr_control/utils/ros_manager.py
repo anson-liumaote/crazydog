@@ -25,9 +25,8 @@ class RosTopicManager(Node):
         # self.pitch_last = 0
         # self.pitch_dot = 0
         self.row = 0
-        self.row_last = 0
-        self.row_dot = 0
         self.yaw = 0
+        self.pitch = 0
         self.yaw_dot = 0
         self.y_linear_acc = 0
         self.dt = 1/300
@@ -100,7 +99,7 @@ class RosTopicManager(Node):
         self.yaw = math.atan2(2 * (qua_w * qua_z + qua_x * qua_y), 1 - 2 * (qua_y**2 + qua_z**2))
         self.y_linear_acc = a_y
 
-        # self.pitch = -(math.asin(2 * (qua_w * qua_y - qua_z * qua_x)) - self.pitch_bias) 
+        self.pitch = -(math.asin(2 * (qua_w * qua_y - qua_z * qua_x))) 
         self.row_dot = msg.angular_velocity.x
         self.yaw_dot = msg.angular_velocity.z
         # self.row_dot = (self.row - self.row_last) / self.dt
@@ -115,7 +114,7 @@ class RosTopicManager(Node):
         
 
     def get_orientation(self):
-        return -self.row, -self.row_dot,
+        return -self.row, -self.row_dot, self.pitch
 
     def get_linear_acc(self):
         return -self.y_linear_acc
