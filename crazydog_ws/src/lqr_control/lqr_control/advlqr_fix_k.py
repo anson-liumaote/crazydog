@@ -35,8 +35,8 @@ class robotController():
         q = np.array([0., 0., 0., 0., 0., 0., 1.,
                             0., -1.18, 2.0, 1., 0.,
                             0., -1.18, 2.0, 1., 0.])
-        adva_k = np.array([[-7.7649,-0.8153 ,-1.3727 ,-1.4729 ,3.5959 ,0.5007],
-                          [5.3771 ,0.3745 ,0.6957  ,0.6466 ,9.6974 ,0.8469]])
+        adva_k = np.array([[-8.0383,-0.7848 ,-1.6223 ,-1.6471 ,3.7960 ,0.5380],
+                          [6.7992 ,0.4026 ,1.4584  ,1.2867 ,10.2626 ,0.7986]])
         #[-7.2468 ,-0.9553 ,-0.9533 ,-1.4048 ,3.5574 ,0.5730],
         #[4.1840 ,0.1985 ,-0.0127  ,-0.0743 ,7.8870 ,0.7830]
         # ([[-6.8033 ,-0.7575 ,-0.7423 ,-1.1602 ,3.3082 ,0.5328],
@@ -278,8 +278,8 @@ class robotController():
         return torque
     
     def kalman_filter_data_fusion(self, dt, x, P): 
-        sigma_v = 0.05 #速度噪聲方差
-        sigma_a = 0.05 #加速度噪聲方差
+        sigma_v = 0.01 #速度噪聲方差
+        sigma_a = 0.08 #加速度噪聲方差
         sigma_process = 1 #過程噪聲方差
         F = np.array([[1, dt],[0, 1]]) #狀態轉移矩陣
         H = np.eye(2) #量測矩陣
@@ -365,8 +365,8 @@ class robotController():
             thigh_command_right = U_tr
             thigh_command_left = U_tl
             # soft constrain
-            motor_command_left = max(-1.8, min(motor_command_left, 1.8))
-            motor_command_right = max(-1.8, min(motor_command_right, 1.8))
+            motor_command_left = max(-3, min(motor_command_left, 3))
+            motor_command_right = max(-3, min(motor_command_right, 3))
             thigh_command_right = max(-2.5, min(thigh_command_right, 2.5))
             thigh_command_left = max(-2.5, min(thigh_command_left, 2.5))
 
@@ -385,9 +385,9 @@ class robotController():
             self.x_dot_ref_list.append(speed)
             self.time_list.append(current_time)
 
-            if abs(X[4, 0]) > math.radians(25) or abs(Lleg_position+X[4, 0]) > math.radians(45) or abs(Rleg_position+X[4, 0]) > math.radians(45):     # constrain
+            if abs(X[4, 0]) > math.radians(25) or abs(Lleg_position+X[4, 0]) > math.radians(45) or abs(Rleg_position+X[4, 0]) > math.radians(45) or abs(X_ref[2, 0]-X[2, 0]) > 2.5:     # constrain
                 
-                # print("out of constrain",X[0, 0])
+                print("out of constrain",X[0, 0])
                 self.set_motor_cmd(motor_number=4,torque=0,kd = 0.01)
                 self.set_motor_cmd(motor_number=1,torque=0,kd = 0.01)
                 self.set_motor_cmd(motor_number=2,torque=0,kd = 0.005)

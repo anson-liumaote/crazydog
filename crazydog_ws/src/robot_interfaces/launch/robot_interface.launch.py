@@ -31,6 +31,16 @@ def generate_launch_description():
         ),
         Node(
             package='robot_interfaces',
+            executable='unitree_l',
+            name='unitree_l'
+        ),
+        Node(
+            package='robot_interfaces',
+            executable='unitree_r',
+            name='unitree_r'
+        ),
+        Node(
+            package='robot_interfaces',
             executable='unitree_pubsub',
             name='unitree_pubsub'
         ),

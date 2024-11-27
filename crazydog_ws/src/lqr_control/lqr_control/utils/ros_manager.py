@@ -37,11 +37,20 @@ class RosTopicManager(Node):
 
         self.ctrl_condition = threading.Condition()
 
-        self.unitree_command_sub = self.create_subscription(
-                LowState,
-                'unitree_status',
-                self.status_callback,
-                1)
+        # self.unitree_command_l_sub = self.create_subscription(
+        #         LowState,
+        #         'unitree_l_status',
+        #         self.status_callback,
+        #         1)
+        # self.unitree_command_r_sub = self.create_subscription(
+        #         LowState,
+        #         'unitree_r_status',
+        #         self.status_callback,
+        #         1)
+        self.unitree_state_sub = self.create_subscription(LowState,
+                                                        'unitree_status',
+                                                        self.status_callback,
+                                                        1)
         self.motor_states = LowState()
         self.motor_cmd_pub = self.create_publisher(LowCommand, 'unitree_command', 1)
 

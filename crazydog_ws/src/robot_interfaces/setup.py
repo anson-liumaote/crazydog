@@ -28,8 +28,10 @@ setup(
             'foc_data_pub = robot_interfaces.foc_data_pub:main',
             'imu_data_pub = robot_interfaces.imu_data_pub:main',
             'joy_controller = robot_interfaces.joy_controller:main',
-            'unitree_pubsub = robot_interfaces.unitree_pubsub:main',
             'odom_pub = robot_interfaces.odom_pub:main',
+            'unitree_pubsub = robot_interfaces.unitree_pubsub_test:main',
+            'unitree_r = robot_interfaces.unitree_r:main',
+            'unitree_l = robot_interfaces.unitree_l:main',
         ],
     },
 )
