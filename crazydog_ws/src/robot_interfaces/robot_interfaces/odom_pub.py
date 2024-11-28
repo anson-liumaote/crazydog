@@ -10,8 +10,8 @@ from sensor_msgs.msg import JointState
 from scipy.spatial.transform import Rotation as R
 import numpy as np
 
-WHEEL_RADIUS = 0.07     # m
-WHEEL_DISTANCE = 0.355
+# WHEEL_RADIUS = 0.07     # m
+# WHEEL_DISTANCE = 0.355
 
 class focMotor():
     def __init__(self):
@@ -21,11 +21,16 @@ class focMotor():
         self.temperature = 0.0  # degree C
 
 class OdometryNode(Node):
-    def __init__(self, wheels_separation, wheels_radius):
+    def __init__(self):
         super().__init__('odometry_node')
-        
-        # self.wheel_radius = wheels_radius  # in meters
-        # self.wheel_separation = wheels_separation  # in meters
+
+        # Declare the parameters with default values (in case they are not set from YAML)
+        self.declare_parameter('wheel_radius')
+        self.declare_parameter('wheel_distance')
+
+        # Get the parameters from the YAML file or default values
+        self.wheel_radius = self.get_parameter('wheel_radius').value
+        self.wheel_distance = self.get_parameter('wheel_distance').value
 
         self.jointstate = JointState()
 
@@ -47,14 +52,14 @@ class OdometryNode(Node):
     def imu_callback(self, msg):
         try:
             pos_left, pos_right = self.jointstate.position[6], self.jointstate.position[7]
-            v_left, v_right = self.jointstate.velocity[6] * WHEEL_RADIUS, self.jointstate.velocity[7] * WHEEL_RADIUS
+            v_left, v_right = self.jointstate.velocity[6] * self.wheel_radius, self.jointstate.velocity[7] * self.wheel_radius
             self.publish_odometry(pos_left, pos_right, v_left, v_right, msg)
         except Exception as e:
             self.get_logger().warning(f'{e}')
 
     def rpm_to_mps(self, rpm):
         """Convert RPM to meters per second."""
-        return rpm * WHEEL_RADIUS * (2 * math.pi / 60)
+        return rpm * self.wheel_radius * (2 * math.pi / 60)
 
     def quaternion_multiply(self, q1, q2):
         # 四元數乘法
@@ -110,17 +115,17 @@ class OdometryNode(Node):
             self.last_pos_right = pos_right
             return None
         else:
-            dL = (pos_left - self.last_pos_left) * WHEEL_RADIUS
-            dR = (pos_right - self.last_pos_right) * WHEEL_RADIUS
+            dL = (pos_left - self.last_pos_left) * self.wheel_radius
+            dR = (pos_right - self.last_pos_right) * self.wheel_radius
             self.last_pos_left = pos_left
             self.last_pos_right = pos_right
 
         v_avg = (v_left + v_right) / 2.0
-        omega = (v_right - v_left) / WHEEL_DISTANCE
+        omega = (v_right - v_left) / self.wheel_distance
 
         # Calculate the forward movement and angular change
         d = (dL + dR) / 2.0
-        dtheta = (dR - dL) / WHEEL_DISTANCE
+        dtheta = (dR - dL) / self.wheel_distance
 
         # Update position
         self.x += d * math.cos(self.theta)
@@ -156,7 +161,7 @@ class OdometryNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    odometry_node = OdometryNode(wheels_separation=WHEEL_DISTANCE, wheels_radius=WHEEL_RADIUS)  # example values
+    odometry_node = OdometryNode()  # example values
     rclpy.spin(odometry_node)
     odometry_node.destroy_node()
     rclpy.shutdown()

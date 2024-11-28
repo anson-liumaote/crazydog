@@ -1,8 +1,7 @@
 import time
 import math
 import sys
-sys.path.append('/home/crazydog/crazydog/crazydog_ws/src/robot_interfaces/robot_interfaces/unitree_actuator_sdk/lib')
-sys.path.append('..')
+sys.path.append('./unitree_actuator_sdk/lib')
 # sys.path.append('/home/crazydog/crazydog/crazydog_ws/src/lqr_control/lqr_control')
 from unitree_actuator_sdk import * # type: ignorei
 import threading
@@ -13,21 +12,22 @@ from unitree_msgs.msg import LowCommand, LowState, MotorCommand, MotorState
 from std_msgs.msg import Float32MultiArray
 from sensor_msgs.msg import JointState
 
-MOTOR_INIT_POS = [None, 0.669, 1.1, None, 7.5302, 2.2]
+# MOTOR_INIT_POS = [None, 0.669, 1.1, None, 7.5302, 2.2]
 
-MOTOR_ORIGIN_POS = [0.0, -4.6, 27.8, 0.0, 12.8, -24.4, 0.0, 0.0]
-SCALE = [6.33, 6.33, 6.33*1.6, 6.33, -6.33, -6.33*1.6, 1.0, 1.0]
-WHEEL_RADIUS = 0.07     # m
+# MOTOR_ORIGIN_POS = [0.0, -4.6, 27.8, 0.0, 12.8, -24.4, 0.0, 0.0]
+# SCALE = [6.33, 6.33, 6.33*1.6, 6.33, -6.33, -6.33*1.6, 1.0, 1.0]
+
+
 
 class unitree_communication(object):
-    def __init__(self,device_name = '/dev/ttyUSB0'):
+    def __init__(self, device_name = '/dev/ttyUSB0'):
         self.serial = SerialPort(device_name)
         self.motors = []
         # self.runing_flag = False
 
-    def createMotor(self, motor_number=None, MAX=None, MIN=None):
+    def createMotor(self, motor_number=None, MAX=None, MIN=None, origin_pos=None, scale=None):
         if motor_number not in [motor.id for motor in self.motors]:
-            motor = unitree_motor(motor_number, MAX_degree=MAX, MIN_degree=MIN)
+            motor = unitree_motor(motor_number, MAX_degree=MAX, MIN_degree=MIN, origin_pos=origin_pos, scale=scale)
             self.motors.append(motor)
             return motor                              
 
@@ -54,7 +54,7 @@ class unitree_communication(object):
                 self.serial.sendRecv(motor.cmd, motor.data)
                 # time.sleep(0.1)
             else:
-                print("motor {0} out off constrant".format(motor.cmd.id))
+                print("motor {0} out of constrant".format(motor.cmd.id))
                 print(motor.max, motor.data.q, motor.min)
                 motor.cmd.mode = queryMotorMode(MotorType.GO_M8010_6,MotorMode.FOC)
                 motor.cmd.q    = 0
@@ -81,14 +81,14 @@ class unitree_communication(object):
 
     
 class unitree_motor(object):                                                                                  
-    def __init__(self, motor_id=None,MAX_degree=None,MIN_degree=None):
+    def __init__(self, motor_id=None,MAX_degree=None,MIN_degree=None, origin_pos=None, scale=None):
         self.id = motor_id
         self.cmd = MotorCmd()
         self.data = MotorData()
         self.data.motorType = MotorType.GO_M8010_6
         self.cmd.motorType = MotorType.GO_M8010_6
-        self.max = MAX_degree * SCALE[motor_id] + MOTOR_ORIGIN_POS[motor_id]
-        self.min = MIN_degree * SCALE[motor_id] + MOTOR_ORIGIN_POS[motor_id]
+        self.max = MAX_degree * scale[motor_id] + origin_pos[motor_id]
+        self.min = MIN_degree * scale[motor_id] + origin_pos[motor_id]
         self.cmd.id = motor_id
 
         print(f'constrain: id {self.id}, max {self.max}, min {self.min}')
@@ -99,12 +99,20 @@ class UnitreeInterface(Node):
     def __init__(self):
         super().__init__('unitree_pubsub')
 
+        # Declare the parameters with default values (in case they are not set from YAML)
+        self.declare_parameter('motor_origin_pos', [0.0] * 8)
+        self.declare_parameter('scale', [1.0] * 8)
+
+        # Get the parameters from the YAML file or default values
+        self.motor_origin_pos = self.get_parameter('motor_origin_pos').value
+        self.scale = self.get_parameter('scale').value
+
         self.unitree = unitree_communication('/dev/unitree-l')
-        MOTOR1 = self.unitree.createMotor(motor_number = 1, MAX=2.093, MIN=0.0)
-        MOTOR2 = self.unitree.createMotor(motor_number = 2, MAX=0.0, MIN=-2.7)
+        MOTOR1 = self.unitree.createMotor(motor_number = 1, MAX=2.093, MIN=0.0, origin_pos=self.motor_origin_pos, scale=self.scale)
+        MOTOR2 = self.unitree.createMotor(motor_number = 2, MAX=0.0, MIN=-2.7, origin_pos=self.motor_origin_pos, scale=self.scale)
         self.unitree2 = unitree_communication('/dev/unitree-r')
-        MOTOR4 = self.unitree2.createMotor(motor_number = 4, MAX=0.0, MIN=2.093)
-        MOTOR5 = self.unitree2.createMotor(motor_number = 5, MAX=-2.7, MIN=0.0)
+        MOTOR4 = self.unitree2.createMotor(motor_number = 4, MAX=0.0, MIN=2.093, origin_pos=self.motor_origin_pos, scale=self.scale)
+        MOTOR5 = self.unitree2.createMotor(motor_number = 5, MAX=-2.7, MIN=0.0, origin_pos=self.motor_origin_pos, scale=self.scale)
 
         self.unitree_command_sub = self.create_subscription(
             LowCommand,
@@ -181,8 +189,8 @@ class UnitreeInterface(Node):
         self.jointstate_pub.publish(self.jointstate_msg)
     
     def scaling(self, states: JointState):
-        states.position = [(state-org)/scale for state, scale, org in zip(states.position, SCALE, MOTOR_ORIGIN_POS)]
-        states.velocity = [state/scale for state, scale in zip(states.velocity, SCALE)]
+        states.position = [(state-org)/scale for state, scale, org in zip(states.position, self.scale, self.motor_origin_pos)]
+        states.velocity = [state/scale for state, scale in zip(states.velocity, self.scale)]
         return states
     
 def main(args=None):

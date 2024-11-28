@@ -6,8 +6,8 @@ import can
 import math
 import numpy as np
 
-GEAR_RATIO_M3508 = 15.76
-GEAR_RATIO_M2006 = 36.0
+# GEAR_RATIO_M3508 = 15.76
+# GEAR_RATIO_M2006 = 36.0
 
 class DjiMotor():
     def __init__(self, motor_id, gear_ratio):
@@ -27,12 +27,21 @@ class focDataPublisher(Node):
 
     def __init__(self):
         super().__init__('foc_data_publisher')
+
+        # Declare the parameters with default values (in case they are not set from YAML)
+        self.declare_parameter('gear_ratio_M3508')
+        self.declare_parameter('gear_ratio_M2006')
+
+        # Get the parameters from the YAML file or default values
+        gear_ratio_M3508 = self.get_parameter('gear_ratio_M3508').value
+        gear_ratio_M2006 = self.get_parameter('gear_ratio_M2006').value
+
         self.publisher_ = self.create_publisher(Float32MultiArray, 'foc_msg', 1)
         can_interface = 'can0'
         self.bus = can.interface.Bus(channel=can_interface, interface='socketcan')
-        m_left = DjiMotor(motor_id=0x201, gear_ratio=GEAR_RATIO_M3508)
-        m_right = DjiMotor(motor_id=0x202, gear_ratio=GEAR_RATIO_M3508)
-        m_dock = DjiMotor(motor_id=0x203, gear_ratio=GEAR_RATIO_M2006)
+        m_left = DjiMotor(motor_id=0x201, gear_ratio=gear_ratio_M3508)
+        m_right = DjiMotor(motor_id=0x202, gear_ratio=gear_ratio_M3508)
+        m_dock = DjiMotor(motor_id=0x203, gear_ratio=gear_ratio_M2006)
         self.motors = [m_left, m_right, m_dock]
         self.receive_can_messages()
         

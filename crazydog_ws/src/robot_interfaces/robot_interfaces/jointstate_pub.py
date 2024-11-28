@@ -6,16 +6,20 @@ from unitree_msgs.msg import LowCommand, LowState, MotorCommand, MotorState
 from std_msgs.msg import Float32MultiArray
 from sensor_msgs.msg import JointState
 
-MOTOR_INIT_POS = [None, 0.669, 1.1, None, 7.5302, 2.2]
-
-MOTOR_ORIGIN_POS = [0.0, -4.6, 27.8, 0.0, 12.8, -24.4, 0.0, 0.0]
-SCALE = [6.33, 6.33, 6.33*1.6, 6.33, -6.33, -6.33*1.6, 1.0, 1.0]
-WHEEL_RADIUS = 0.07     # m
-
 class UnitreeInterface(Node):
 
     def __init__(self):
         super().__init__('jointstate_pub')
+
+        # Declare the parameters with default values (in case they are not set from YAML)
+        self.declare_parameter('motor_origin_pos')
+        self.declare_parameter('scale')
+        self.declare_parameter('joint_names')
+
+        # Get the parameters from the YAML file or default values
+        self.motor_origin_pos = self.get_parameter('motor_origin_pos').value
+        self.scale = self.get_parameter('scale').value
+        self.joint_names = self.get_parameter('joint_names').value
 
         self.unitree_left_sub = self.create_subscription(
             LowState,
@@ -42,7 +46,7 @@ class UnitreeInterface(Node):
         self.jointstate_msg = JointState()
         self.jointstate_msg.header.stamp = self.get_clock().now().to_msg()
         self.jointstate_msg.header.frame_id = ""
-        self.jointstate_msg.name = ["hip_l", "thigh_l","calf_l","hip_r","thigh_r","calf_r", "wheel_l", "wheel_r"]
+        self.jointstate_msg.name = self.joint_names
         self.jointstate_msg.position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.jointstate_msg.velocity = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
@@ -91,11 +95,10 @@ class UnitreeInterface(Node):
         self.status_pub.publish(msg_list)
         self.jointstate_msg = self.scaling(self.jointstate_msg)
         self.jointstate_pub.publish(self.jointstate_msg)
-        
     
     def scaling(self, states: JointState):
-        states.position = [(state-org)/scale for state, scale, org in zip(states.position, SCALE, MOTOR_ORIGIN_POS)]
-        states.velocity = [state/scale for state, scale in zip(states.velocity, SCALE)]
+        states.position = [(state-org)/scale for state, scale, org in zip(states.position, self.scale, self.motor_origin_pos)]
+        states.velocity = [state/scale for state, scale in zip(states.velocity, self.scale)]
         return states
     
 def main(args=None):
