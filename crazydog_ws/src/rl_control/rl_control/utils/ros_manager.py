@@ -40,7 +40,7 @@ class RosManager(Node):
 
         self.unitree_command_sub = self.create_subscription(
                 LowState,
-                'unitree_status',
+                'unitree_status_all',
                 self.status_callback,
                 1)
         self.motor_states = LowState()

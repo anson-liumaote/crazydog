@@ -33,7 +33,7 @@ class robotController():
         rclpy.init()
         self.rl_thread = None
         # Initialize ONNX model
-        self.model_path = '/home/crazydog/crazydog/crazydog_ws/src/rl_control/rl_control/model/2024-11-08_22-50-14/exported/policy.onnx'
+        self.model_path = '/home/crazydog/crazydog/crazydog_ws/src/rl_control/rl_control/model/2024-11-24_23-20-58/exported/policy.onnx'
         self.ort_session = ort.InferenceSession(self.model_path)
 
 
@@ -42,7 +42,8 @@ class robotController():
         self.ros_manager_thread = threading.Thread(target=rclpy.spin, args=(self.ros_manager,), daemon=True)
         self.ros_manager_thread.start()
         self.running_flag = False
-        self.steering_pid = PID(0.5, 0, 0.0001)
+        self.wheel_pid_l = PID(0.3, 0.0, 0.0)
+        self.wheel_pid_r = PID(0.3, 0.0, 0.0)
         self.cmd_list = LowCommand()
         time.sleep(2)
 
@@ -51,22 +52,38 @@ class robotController():
             return True
         else: 
             return False
-        
+    
+    # def scaling(self, id, pos, vel):
+    #     states.position = (os-org)/scale 
+    #     states.velocity = [state/scale for state, scale in zip(states.velocity, self.scale)]
+    #     return states
+
     def inverse_scaling(self, id, pos, vel):
         position = pos * SCALE[id] + MOTOR_ORIGIN_POS[id]
         velocity = vel * SCALE[id]
         return float(position), float(velocity)
             
-    def set_motor_cmd(self, motor_number, kp, kd, position, torque=0, velocity=0):
-        torque = max(-1, min(torque, 1))
-        cmd = MotorCommand()
-        cmd.q = float(position)
-        cmd.dq = float(velocity)
-        # cmd.q, cmd.dq = self.inverse_scaling(position, velocity)
-        cmd.tau = float(torque)
-        cmd.kp = float(kp)
-        cmd.kd = float(kd)
-        self.cmd_list.motor_cmd[motor_number] = cmd
+    def set_motor_cmd(self, motor_number, kp, kd, position, torque=0, velocity=0, scaling=False):
+        if scaling==False:
+            torque = max(-1, min(torque, 1))
+            cmd = MotorCommand()
+            cmd.q = float(position)
+            cmd.dq = float(velocity)
+            # cmd.q, cmd.dq = self.inverse_scaling(position, velocity)
+            cmd.tau = float(torque)
+            cmd.kp = float(kp)
+            cmd.kd = float(kd)
+            self.cmd_list.motor_cmd[motor_number] = cmd
+        else:
+            torque = max(-1, min(torque, 1))
+            cmd = MotorCommand()
+            cmd.q = float(position) * SCALE[motor_number] + MOTOR_ORIGIN_POS[motor_number]
+            cmd.dq = float(velocity) * SCALE[motor_number]
+            # cmd.q, cmd.dq = self.inverse_scaling(position, velocity)
+            cmd.tau = float(torque)/SCALE[motor_number]
+            cmd.kp = float(kp)
+            cmd.kd = float(kd)
+            self.cmd_list.motor_cmd[motor_number] = cmd
 
     def init_unitree_motor(self):
         if self.check_target_pos("thigh_l") and self.check_target_pos("thigh_r"):
@@ -77,10 +94,10 @@ class robotController():
                 self.set_motor_cmd(motor_number=4, kp=0, kd=0.2, position=0, torque=0, velocity=0.5)
                 self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
                 time.sleep(0.001)
-            self.set_motor_cmd(motor_number=1, kp=6., kd=0.1, position=self.ros_manager.motor_states[1].q, torque=0, velocity=0)
-            self.set_motor_cmd(motor_number=2, kp=6., kd=0.1, position=self.ros_manager.motor_states[2].q, torque=0, velocity=0)
-            self.set_motor_cmd(motor_number=4, kp=6., kd=0.1, position=self.ros_manager.motor_states[4].q, torque=0, velocity=0)
-            self.set_motor_cmd(motor_number=5, kp=6., kd=0.1, position=self.ros_manager.motor_states[5].q, torque=0, velocity=0)
+            self.set_motor_cmd(motor_number=1, kp=6., kd=0.1, position=0.8324, torque=0, velocity=0, scaling=True)
+            # self.set_motor_cmd(motor_number=2, kp=6., kd=0.1, position=self.ros_manager.motor_states[2].q, torque=0, velocity=0)
+            self.set_motor_cmd(motor_number=4, kp=6., kd=0.1, position=0.8324, torque=0, velocity=0, scaling=True)
+            # self.set_motor_cmd(motor_number=5, kp=6., kd=0.1, position=self.ros_manager.motor_states[5].q, torque=0, velocity=0)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
         else:
             print("inital fail")
@@ -106,30 +123,26 @@ class robotController():
         return theta1_err, theta2_err
 
     def locklegs(self):
-        self.ros_manager.wheel_coordinate = [-0.0639-ORIGIN_BIAS[0], -0.003637-ORIGIN_BIAS[1]]
-        theta1_err, theta2_err = self.get_angle_error(self.ros_manager.wheel_coordinate)     # lock legs coordinate [x, y] (hip joint coordinate (0.0742, 0))
-        while self.ros_manager.get_joint_pos('thigh_l') <= 1.271 and self.ros_manager.get_joint_pos('thigh_r') <= 1.271:            
-            # self.set_motor_cmd(motor_number=1, kp=2, kd=0.02, position=self.ros_manager.motor_states[1].q+0.1, torque=0, velocity=0)
-            # self.set_motor_cmd(motor_number=4, kp=2, kd=0.02, position=self.ros_manager.motor_states[4].q-0.1, torque=0, velocity=0)
-            self.set_motor_cmd(motor_number=1, kp=0, kd=0.05, position=0, torque=0, velocity=0.2)
-            self.set_motor_cmd(motor_number=4, kp=0, kd=0.05, position=0, torque=0, velocity=-0.2)
+        # self.ros_manager.wheel_coordinate = [-0.0639-ORIGIN_BIAS[0], -0.003637-ORIGIN_BIAS[1]]
+        # theta1_err, theta2_err = self.get_angle_error(self.ros_manager.wheel_coordinate)     # lock legs coordinate [x, y] (hip joint coordinate (0.0742, 0))
+        while self.ros_manager.get_joint_pos('thigh_l') <= 1.271 and self.ros_manager.get_joint_pos('thigh_r') <= 1.271:
+            self.set_motor_cmd(motor_number=1, kp=0, kd=0.05, position=0, torque=0, velocity=0.2, scaling=False)
+            self.set_motor_cmd(motor_number=4, kp=0, kd=0.05, position=0, torque=0, velocity=-0.2, scaling=False)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.001)
         for i in range(10):                        
-            self.set_motor_cmd(motor_number=1, kp=i, kd=0.12, position=self.ros_manager.motor_states[1].q)
-            self.set_motor_cmd(motor_number=4, kp=i, kd=0.12, position=self.ros_manager.motor_states[4].q)
+            self.set_motor_cmd(motor_number=1, kp=i, kd=0.12, position=1.271, scaling=True)
+            self.set_motor_cmd(motor_number=4, kp=i, kd=0.12, position=1.271, scaling=True)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.01)
         while self.ros_manager.get_joint_pos('calf_l') <= -2.12773 and self.ros_manager.get_joint_pos('calf_r') <= -2.12773:
-            # self.set_motor_cmd(motor_number=2, kp=25, kd=0.02, position=self.ros_manager.motor_states[2].q+0.05, torque=0, velocity=0)
-            # self.set_motor_cmd(motor_number=5, kp=25, kd=0.02, position=self.ros_manager.motor_states[5].q-0.05, torque=0, velocity=0)
-            self.set_motor_cmd(motor_number=2, kp=0, kd=0, position=0, torque=0.6, velocity=0)
-            self.set_motor_cmd(motor_number=5 ,kp=0, kd=0, position=0, torque=-0.6, velocity=0)
+            self.set_motor_cmd(motor_number=2, kp=0, kd=0, position=0, torque=0.7, velocity=0, scaling=False)
+            self.set_motor_cmd(motor_number=5 ,kp=0, kd=0, position=0, torque=-0.7, velocity=0, scaling=False)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.001)
         for i in range(10):                        
-            self.set_motor_cmd(motor_number=2, kp=i, kd=0.15, position=self.ros_manager.motor_states[2].q)
-            self.set_motor_cmd(motor_number=5, kp=i, kd=0.15, position=self.ros_manager.motor_states[5].q)
+            self.set_motor_cmd(motor_number=2, kp=i, kd=0.15, position=-2.12773, scaling=True)
+            self.set_motor_cmd(motor_number=5, kp=i, kd=0.15, position=-2.12773, scaling=True)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.01)        
 
@@ -143,6 +156,7 @@ class robotController():
         self.ros_manager.get_logger().info('controller start')
         actions = np.zeros(6)  # Initial actions
         count = 0
+        t0 = time.time()
 
         while self.running_flag:
             with self.ros_manager.ctrl_condition:
@@ -156,7 +170,7 @@ class robotController():
                 self.ros_manager.joint_pos,
                 self.ros_manager.joint_vel,
                 actions
-            ]).astype(np.float32).reshape(1, -1)  # Model expects (1, 22)
+            ]).astype(np.float32).reshape(1, -1)  # Model expects (1, 24)
 
             # Run inference
             print(input_data)
@@ -168,12 +182,27 @@ class robotController():
 
             # Optionally publish or use actions to control the robot
             print(actions)
-            self.set_motor_cmd(motor_number=1, kp=0, kd=0, position=0, torque=actions[0]/6.33, velocity=0)
-            self.set_motor_cmd(motor_number=2 ,kp=0, kd=0, position=0, torque=actions[2]/6.33/1.6, velocity=0)
-            self.set_motor_cmd(motor_number=4, kp=0, kd=0, position=0, torque=-actions[1]/6.33, velocity=0)
-            self.set_motor_cmd(motor_number=5 ,kp=0, kd=0, position=0, torque=-actions[3]/6.33/1.6, velocity=0)
+            # self.set_motor_cmd(motor_number=1, kp=0, kd=0, position=0, torque=actions[0]/6.33, velocity=0)
+            # self.set_motor_cmd(motor_number=2 ,kp=0, kd=0, position=0, torque=actions[2]/6.33/1.6, velocity=0)
+            # self.set_motor_cmd(motor_number=4, kp=0, kd=0, position=0, torque=-actions[1]/6.33, velocity=0)
+            # self.set_motor_cmd(motor_number=5 ,kp=0, kd=0, position=0, torque=-actions[3]/6.33/1.6, velocity=0)
+
+            self.set_motor_cmd(motor_number=1, kp=25.0, kd=0.5, position=actions[0]+1.271, torque=0, velocity=0, scaling=True)
+            self.set_motor_cmd(motor_number=2, kp=25.0, kd=0.5, position=actions[2]+1.271, torque=0, velocity=0, scaling=True)
+            self.set_motor_cmd(motor_number=4, kp=25.0, kd=0.5, position=actions[1]+(-2.12773), torque=0, velocity=0, scaling=True)
+            self.set_motor_cmd(motor_number=5, kp=25.0, kd=0.5, position=actions[3]+(-2.12773), torque=0, velocity=0, scaling=True)
+            # print(self.cmd_list)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-            self.ros_manager.send_foc_command(actions[4], actions[5])
+
+            t1 = time.time()
+            dt = t1-t0
+            print(f'freq, {1/dt}')
+            t0 = t1
+            wheel_tau_l = self.wheel_pid_l.update(actions[4], self.ros_manager.joint_vel[2], 0.02)
+            wheel_tau_r = self.wheel_pid_r.update(actions[5], self.ros_manager.joint_vel[5], 0.02)
+            print(self.ros_manager.joint_vel[2], self.ros_manager.joint_vel[5])
+            print(wheel_tau_l, wheel_tau_r)
+            self.ros_manager.send_foc_command(wheel_tau_l, wheel_tau_r)
             count += 1
 
 

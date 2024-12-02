@@ -82,15 +82,15 @@ class UnitreeInterface(Node):
         except Exception as e:
             self.get_logger().warning(str(e))
 
-        # try:
-        #     if self.foc_status.data[0] == 513.:   # motor left
-        #         self.jointstate_msg.position[6] = -self.foc_status.data[1]
-        #         self.jointstate_msg.velocity[6] = -self.foc_status.data[2] * (2 * math.pi / 60)
-        #     elif self.foc_status.data[0] == 514.: # motor right
-        #         self.jointstate_msg.position[7] = self.foc_status.data[1]
-        #         self.jointstate_msg.velocity[7] = self.foc_status.data[2] * (2 * math.pi / 60)
-        # except Exception as e:
-        #     self.get_logger().warning(f'get foc_status error: {e}')
+        try:
+            if self.foc_status.data[0] == 513.:   # motor left
+                self.jointstate_msg.position[6] = -self.foc_status.data[1]
+                self.jointstate_msg.velocity[6] = -self.foc_status.data[2] * (2 * math.pi / 60)
+            elif self.foc_status.data[0] == 514.: # motor right
+                self.jointstate_msg.position[7] = self.foc_status.data[1]
+                self.jointstate_msg.velocity[7] = self.foc_status.data[2] * (2 * math.pi / 60)
+        except Exception as e:
+            self.get_logger().warning(f'get foc_status error: {e}')
         
         self.status_pub.publish(msg_list)
         self.jointstate_msg = self.scaling(self.jointstate_msg)

@@ -1,13 +1,14 @@
 import time
 import sys
-sys.path.append('/home/crazydogv2/crazydog/crazydog_ws/src/robot_interfaces/robot_interfaces/unitree_actuator_sdk/lib')
+sys.path.append('/home/crazydog/crazydog/crazydog_ws/src/robot_interfaces/robot_interfaces/unitree_actuator_sdk/lib')
 from unitree_actuator_sdk import * # type: ignorei
 import threading
 import rclpy
 from rclpy.node import Node
 from unitree_msgs.msg import LowCommand, LowState, MotorCommand, MotorState
 sys.path.append('..')
-from unitree_left_pub import unitree_communication
+# from unitree_left_pub import unitree_communication
+from crazydog_ws.src.robot_interfaces.robot_interfaces.unitree_left_pub import unitree_communication
 
 class UnitreeInterface(Node):
 
@@ -29,8 +30,6 @@ class UnitreeInterface(Node):
             max = self.get_parameter(f'motors.{id}.max').value
             min = self.get_parameter(f'motors.{id}.min').value
             self.unitree.createMotor(motor_number=id, MAX=max, MIN=min, origin_pos=origin, scale=scale)
-        # MOTOR4 = self.unitree.createMotor(motor_number = 4, MAX=0.0, MIN=2.093, origin_pos=self.motor_origin_pos, scale=self.scale)
-        # MOTOR5 = self.unitree.createMotor(motor_number = 5, MAX=-2.7, MIN=0.0, origin_pos=self.motor_origin_pos, scale=self.scale)
         self.unitree_command_sub = self.create_subscription(
             LowCommand,
             'unitree_command',
@@ -38,9 +37,8 @@ class UnitreeInterface(Node):
             1)
         self.status_pub = self.create_publisher(LowState, 'unitree_status_right', 1)
         self.unitree.enableallmotor()
-        # self.recv_timer = self.create_timer(0.008, self.recv_timer_callback)    # period need to be check
         self.t0 = time.time()
-        sendrecv_thread = threading.Thread(target=self.recv_timer_callback)
+        sendrecv_thread = threading.Thread(target=self.sendrecv_loop)
         sendrecv_thread.start()
 
     def command_callback(self, msg:LowCommand):
@@ -53,11 +51,12 @@ class UnitreeInterface(Node):
             velocity = cmd.dq
             self.unitree.position_force_velocity_cmd(motor_number, torque, kp, kd, position, velocity)
 
-    def recv_timer_callback(self):
+    def sendrecv_loop(self):
         while True:
             feedback, id = self.unitree.motor_sendRecv()
             if feedback==False:
                 self.get_logger().error(f'unitree motor {id} out of constrain.')
+                break
             msg_list = LowState()
             
             for motor in self.unitree.motors:

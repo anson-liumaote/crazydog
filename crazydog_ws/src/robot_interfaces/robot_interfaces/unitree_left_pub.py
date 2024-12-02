@@ -1,6 +1,6 @@
 import time
 import sys
-sys.path.append('/home/crazydogv2/crazydog/crazydog_ws/src/robot_interfaces/robot_interfaces/unitree_actuator_sdk/lib')
+sys.path.append('/home/crazydog/crazydog/crazydog_ws/src/robot_interfaces/robot_interfaces/unitree_actuator_sdk/lib')
 # sys.path.append('..')
 from unitree_actuator_sdk import * # type: ignorei
 import threading
@@ -41,7 +41,7 @@ class unitree_communication(object):
         success = True
         id = None
         for motor in self.motors:
-            if motor.min <= motor.data.q <= motor.max:
+            if motor.min <= (motor.data.q-motor.origin)/motor.scale <= motor.max:
                 self.serial.sendRecv(motor.cmd, motor.data)
                 # time.sleep(0.1)
             else:
@@ -79,8 +79,10 @@ class unitree_motor(object):
         self.data = MotorData()
         self.data.motorType = MotorType.GO_M8010_6
         self.cmd.motorType = MotorType.GO_M8010_6
-        self.max = MAX_degree * scale + origin_pos
-        self.min = MIN_degree * scale + origin_pos
+        self.max = MAX_degree
+        self.min = MIN_degree
+        self.origin = origin_pos
+        self.scale = scale
         self.cmd.id = motor_id
 
         print(f'constrain: id {self.id}, max {self.max}, min {self.min}')
@@ -92,7 +94,7 @@ class UnitreeInterface(Node):
         super().__init__('unitree_left_pub')
 
         ## Declare the top-level 'motors' parameter to read the nested structure
-        self.declare_parameter('activate_motors')
+        self.declare_parameter('activate_motors',)
         ids = self.get_parameter('activate_motors').value
 
         self.unitree = unitree_communication('/dev/unitree-l')
@@ -106,8 +108,6 @@ class UnitreeInterface(Node):
             max = self.get_parameter(f'motors.{id}.max').value
             min = self.get_parameter(f'motors.{id}.min').value
             self.unitree.createMotor(motor_number=id, MAX=max, MIN=min, origin_pos=origin, scale=scale)
-        # MOTOR1 = self.unitree.createMotor(motor_number=m.get('id'), MAX=m.get('max'), MIN=m.get('min'), origin_pos=m.get('origin'), scale=m.get('scale'))
-        # MOTOR2 = self.unitree.createMotor(motor_number = 2, MAX=0.0, MIN=-2.7, origin_pos=self.motor_origin_pos, scale=self.scale)
         self.unitree_command_sub = self.create_subscription(
             LowCommand,
             'unitree_command',
@@ -115,9 +115,8 @@ class UnitreeInterface(Node):
             1)
         self.status_pub = self.create_publisher(LowState, 'unitree_status_left', 1)
         self.unitree.enableallmotor()
-        # self.recv_timer = self.create_timer(0.008, self.recv_timer_callback)    # period need to be check
         self.t0 = time.time()
-        sendrecv_thread = threading.Thread(target=self.recv_timer_callback)
+        sendrecv_thread = threading.Thread(target=self.sendrecv_loop)
         sendrecv_thread.start()
 
     def command_callback(self, msg:LowCommand):
@@ -130,11 +129,12 @@ class UnitreeInterface(Node):
             velocity = cmd.dq
             self.unitree.position_force_velocity_cmd(motor_number, torque, kp, kd, position, velocity)
 
-    def recv_timer_callback(self):
+    def sendrecv_loop(self):
         while True:
             feedback, id = self.unitree.motor_sendRecv()
             if feedback==False:
                 self.get_logger().error(f'unitree motor {id} out of constrain.')
+                break
             msg_list = LowState()
             
             for motor in self.unitree.motors:
