@@ -1,0 +1,218 @@
+--- git status ---
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   source/extensions/omni.isaac.lab_assets/omni/isaac/lab_assets/spot.py
+	modified:   source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/direct/cartpole/__init__.py
+	modified:   source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/classic/cartpole/__init__.py
+	modified:   source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/classic/cartpole/mdp/rewards.py
+	modified:   source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/locomotion/velocity/config/go2/flat_env_cfg.py
+	modified:   source/standalone/tutorials/03_envs/run_cartpole_rl_env.py
+	modified:   source/standalone/workflows/rsl_rl/play.py
+	modified:   source/standalone/workflows/rsl_rl/train.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	source/extensions/omni.isaac.lab_assets/omni/isaac/lab_assets/bipedal.py
+	source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/direct/cartpole/bipedal_env.py
+	source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/classic/cartpole/bipedal_env_cfg_v0(abandon).py
+	source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/locomotion/velocity/config/bipedal/
+	source/standalone/tutorials/02_scene/create_scene_bipedal.py
+
+no changes added to commit (use "git add" and/or "git commit -a") 
+
+
+--- git diff ---
+diff --git a/source/extensions/omni.isaac.lab_assets/omni/isaac/lab_assets/spot.py b/source/extensions/omni.isaac.lab_assets/omni/isaac/lab_assets/spot.py
+index 0d9cf0e4..dc4bbcb3 100644
+--- a/source/extensions/omni.isaac.lab_assets/omni/isaac/lab_assets/spot.py
++++ b/source/extensions/omni.isaac.lab_assets/omni/isaac/lab_assets/spot.py
+@@ -160,7 +160,7 @@ SPOT_CFG = ArticulationCfg(
+             ".*_kn": -1.5,  # all knees
+         },
+         joint_vel={".*": 0.0},
+-    ),
++    ), 
+     actuators={
+         "spot_hip": DelayedPDActuatorCfg(
+             joint_names_expr=[".*_h[xy]"],
+diff --git a/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/direct/cartpole/__init__.py b/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/direct/cartpole/__init__.py
+index cff777f1..777b44d2 100644
+--- a/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/direct/cartpole/__init__.py
++++ b/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/direct/cartpole/__init__.py
+@@ -12,6 +12,7 @@ import gymnasium as gym
+ from . import agents
+ from .cartpole_camera_env import CartpoleCameraEnv, CartpoleDepthCameraEnvCfg, CartpoleRGBCameraEnvCfg
+ from .cartpole_env import CartpoleEnv, CartpoleEnvCfg
++from .bipedal_env import BipedalEnv, BipedalEnvCfg
+ 
+ ##
+ # Register Gym environments.
+@@ -30,6 +31,20 @@ gym.register(
+     },
+ )
+ 
++gym.register(
++    id="Isaac-Bipedal-Direct-v0",
++    entry_point="omni.isaac.lab_tasks.direct.cartpole:BipedalEnv",
++    disable_env_checker=True,
++    kwargs={
++        "env_cfg_entry_point": BipedalEnvCfg,
++        "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_ppo_cfg.yaml",
++        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:CartpolePPORunnerCfg",
++        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_ppo_cfg.yaml",
++        "sb3_cfg_entry_point": f"{agents.__name__}:sb3_ppo_cfg.yaml",
++    },
++)
++
++
+ gym.register(
+     id="Isaac-Cartpole-RGB-Camera-Direct-v0",
+     entry_point="omni.isaac.lab_tasks.direct.cartpole:CartpoleCameraEnv",
+diff --git a/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/classic/cartpole/__init__.py b/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/classic/cartpole/__init__.py
+index 573860da..4d674cf2 100644
+--- a/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/classic/cartpole/__init__.py
++++ b/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/classic/cartpole/__init__.py
+@@ -11,6 +11,7 @@ import gymnasium as gym
+ 
+ from . import agents
+ from .cartpole_env_cfg import CartpoleEnvCfg
++# from .bipedal_env_cfg_v0 import BipedalEnvCfg
+ 
+ ##
+ # Register Gym environments.
+@@ -28,3 +29,15 @@ gym.register(
+         "sb3_cfg_entry_point": f"{agents.__name__}:sb3_ppo_cfg.yaml",
+     },
+ )
++# gym.register(
++#     id="Isaac-Bipedal-v0",
++#     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
++#     disable_env_checker=True,
++#     kwargs={
++#         "env_cfg_entry_point": BipedalEnvCfg,
++#         "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_ppo_cfg.yaml",
++#         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:CartpolePPORunnerCfg",
++#         "skrl_cfg_entry_point": f"{agents.__name__}:skrl_ppo_cfg.yaml",
++#         "sb3_cfg_entry_point": f"{agents.__name__}:sb3_ppo_cfg.yaml",
++#     },
++# )
+diff --git a/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/classic/cartpole/mdp/rewards.py b/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/classic/cartpole/mdp/rewards.py
+index c082a988..b7b463b6 100644
+--- a/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/classic/cartpole/mdp/rewards.py
++++ b/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/classic/cartpole/mdp/rewards.py
+@@ -24,3 +24,52 @@ def joint_pos_target_l2(env: ManagerBasedRLEnv, target: float, asset_cfg: SceneE
+     joint_pos = wrap_to_pi(asset.data.joint_pos[:, asset_cfg.joint_ids])
+     # compute the reward
+     return torch.sum(torch.square(joint_pos - target), dim=1)
++
++def joint_pos_dif_l1(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
++    """Calculate the difference between joint angular position."""
++    # extract the used quantities (to enable type-hinting)
++    asset: Articulation = env.scene[asset_cfg.name]
++    # print(asset.data.joint_pos)
++    thigh_r_pos = asset.data.joint_pos[:, 0]  
++    thigh_l_pos = asset.data.joint_pos[:, 1]  
++    # print(thigh_r_pos, thigh_l_pos)
++    
++    return torch.sum(torch.abs(thigh_r_pos-thigh_l_pos), dim=0)
++
++def joint_target_deviation_range_l1(
++    env: ManagerBasedRLEnv,
++    min_angle: float,
++    max_angle: float,
++    in_range_reward: float,
++    cmd_threshold: float = -1.0,
++    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
++) -> torch.Tensor:
++    """Provide a fixed reward when the joint angle is within a specified range and penalize deviations."""
++    asset: Articulation = env.scene[asset_cfg.name]
++    cmd = torch.norm(env.command_manager.get_command("base_velocity"), dim=1)
++
++    # Get the current joint positions
++    current_joint_pos = asset.data.joint_pos[:, asset_cfg.joint_ids]
++
++    # Check if the joint angles are within the specified range
++    in_range = (current_joint_pos >= min_angle) & (current_joint_pos <= max_angle)
++
++    # Calculate the absolute deviation from the nearest range limit when out of range
++    out_of_range_penalty = torch.abs(
++        current_joint_pos - torch.where(current_joint_pos < min_angle, min_angle, max_angle)
++    )
++
++    if cmd_threshold != -1.0:
++        joint_deviation_range = torch.where(
++            cmd.unsqueeze(1) <= cmd_threshold,
++            torch.where(in_range, in_range_reward * torch.ones_like(current_joint_pos), -out_of_range_penalty),
++            torch.tensor(0.0),
++        )
++    else:
++        # Assign a fixed reward if in range, and a negative penalty if out of range
++        joint_deviation_range = torch.where(
++            in_range, in_range_reward * torch.ones_like(current_joint_pos), -out_of_range_penalty
++        )
++
++    # Sum the rewards over all joint ids
++    return torch.sum(joint_deviation_range, dim=1)
+\ No newline at end of file
+diff --git a/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/locomotion/velocity/config/go2/flat_env_cfg.py b/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/locomotion/velocity/config/go2/flat_env_cfg.py
+index 1c3f41d6..9ee7f65b 100644
+--- a/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/locomotion/velocity/config/go2/flat_env_cfg.py
++++ b/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/locomotion/velocity/config/go2/flat_env_cfg.py
+@@ -40,4 +40,4 @@ class UnitreeGo2FlatEnvCfg_PLAY(UnitreeGo2FlatEnvCfg):
+         self.observations.policy.enable_corruption = False
+         # remove random pushing event
+         self.events.base_external_force_torque = None
+-        self.events.push_robot = None
++        self.events.push_robot = None
+\ No newline at end of file
+diff --git a/source/standalone/tutorials/03_envs/run_cartpole_rl_env.py b/source/standalone/tutorials/03_envs/run_cartpole_rl_env.py
+index 5f9610f8..22f58e21 100644
+--- a/source/standalone/tutorials/03_envs/run_cartpole_rl_env.py
++++ b/source/standalone/tutorials/03_envs/run_cartpole_rl_env.py
+@@ -30,13 +30,13 @@ import torch
+ 
+ from omni.isaac.lab.envs import ManagerBasedRLEnv
+ 
+-from omni.isaac.lab_tasks.manager_based.classic.cartpole.cartpole_env_cfg import CartpoleEnvCfg
+-
++# from omni.isaac.lab_tasks.manager_based.classic.cartpole.cartpole_env_cfg import CartpoleEnvCfg
++from omni.isaac.lab_tasks.manager_based.classic.cartpole.bipedal_env_cfg import BipedalEnvCfg
+ 
+ def main():
+     """Main function."""
+     # create environment configuration
+-    env_cfg = CartpoleEnvCfg()
++    env_cfg = BipedalEnvCfg()
+     env_cfg.scene.num_envs = args_cli.num_envs
+     # setup RL environment
+     env = ManagerBasedRLEnv(cfg=env_cfg)
+diff --git a/source/standalone/workflows/rsl_rl/play.py b/source/standalone/workflows/rsl_rl/play.py
+index 4beba6f4..f96d2d67 100644
+--- a/source/standalone/workflows/rsl_rl/play.py
++++ b/source/standalone/workflows/rsl_rl/play.py
+@@ -114,6 +114,8 @@ def main():
+         with torch.inference_mode():
+             # agent stepping
+             actions = policy(obs)
++            print(obs)
++            print(actions)
+             # env stepping
+             obs, _, _, _ = env.step(actions)
+         if args_cli.video:
+diff --git a/source/standalone/workflows/rsl_rl/train.py b/source/standalone/workflows/rsl_rl/train.py
+index 4749cbaf..e1fd2fed 100644
+--- a/source/standalone/workflows/rsl_rl/train.py
++++ b/source/standalone/workflows/rsl_rl/train.py
+@@ -20,7 +20,7 @@ import cli_args  # isort: skip
+ parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
+ parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
+ parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
+-parser.add_argument("--video_interval", type=int, default=2000, help="Interval between video recordings (in steps).")
++parser.add_argument("--video_interval", type=int, default=10000, help="Interval between video recordings (in steps).")
+ parser.add_argument("--num_envs", type=int, default=None, help="Number of environments to simulate.")
+ parser.add_argument("--task", type=str, default=None, help="Name of the task.")
+ parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
