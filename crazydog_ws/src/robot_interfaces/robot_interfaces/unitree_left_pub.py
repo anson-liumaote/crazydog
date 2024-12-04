@@ -1,6 +1,6 @@
 import time
 import sys
-sys.path.append('/home/crazydog/crazydog/crazydog_ws/src/robot_interfaces/robot_interfaces/unitree_actuator_sdk/lib')
+sys.path.append('/home/crazydogv2/crazydog/crazydog_ws/src/robot_interfaces/robot_interfaces/unitree_actuator_sdk/lib')
 # sys.path.append('..')
 from unitree_actuator_sdk import * # type: ignorei
 import threading
@@ -39,7 +39,7 @@ class unitree_communication(object):
             
     def motor_sendRecv(self):
         success = True
-        id = None
+        id = []
         for motor in self.motors:
             if motor.min <= (motor.data.q-motor.origin)/motor.scale <= motor.max:
                 self.serial.sendRecv(motor.cmd, motor.data)
@@ -51,11 +51,11 @@ class unitree_communication(object):
                 motor.cmd.q    = 0
                 motor.cmd.dq   = 0
                 motor.cmd.kp   = 0
-                motor.cmd.kd   = 0
+                motor.cmd.kd   = 0.05
                 motor.cmd.tau  = 0
                 self.serial.sendRecv(motor.cmd, motor.data)
                 success = False
-                id = motor.cmd.id
+                id.append(motor.cmd.id)
                 # time.sleep(0.0006)
         return success, id
 
@@ -134,7 +134,6 @@ class UnitreeInterface(Node):
             feedback, id = self.unitree.motor_sendRecv()
             if feedback==False:
                 self.get_logger().error(f'unitree motor {id} out of constrain.')
-                break
             msg_list = LowState()
             
             for motor in self.unitree.motors:

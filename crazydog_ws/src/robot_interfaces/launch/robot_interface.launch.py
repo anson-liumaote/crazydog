@@ -8,7 +8,7 @@ def generate_launch_description():
     config = os.path.join(
         get_package_share_directory('robot_interfaces'),
         'config',
-        'robotv1.yaml'
+        'robotv2.yaml'
     )
     print(config)
     return LaunchDescription([
