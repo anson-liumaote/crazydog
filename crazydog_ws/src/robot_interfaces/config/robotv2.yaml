@@ -10,12 +10,12 @@ unitree_left_pub:
       0: 
         origin: -0.144
         scale: 6.33
-        max: 0.436
+        max: 0.425
         min: -0.523
       1: 
         origin: -2.17
         scale: 6.33
-        max: 2.093
+        max: 3.14
         min: 0.0
       2: 
         origin: 31.785
@@ -35,7 +35,7 @@ unitree_right_pub:
       4: 
         origin: 10.0
         scale: -6.33
-        max: 2.093
+        max: 3.14
         min: 0.0
       5: 
         origin: -23.827

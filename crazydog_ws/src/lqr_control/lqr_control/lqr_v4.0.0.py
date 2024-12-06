@@ -24,36 +24,36 @@ LOCK_POS = [None, 2.76, 9.88, None, 5.44, -3.10]    # -2.75, 2.0
 THIGH_LENGTH = 0.215
 CALF_LENGTH = 0.215
 ORIGIN_BIAS = [-0.02235, 0.22494]   # bias between hip joint and origin in urdf
-MOTOR_ORIGIN_POS = [0.0, -4.6, 27.8, 0.0, 12.8, -24.4, 0.0, 0.0]
+MOTOR_ORIGIN_POS = [-0.144, -2.17, 31.785, 8.394, 10.0, -23.827, 0.0, 0.0]
 SCALE = [6.33, 6.33, 6.33*1.6, 6.33, -6.33, -6.33*1.6, 1.0, 1.0]
 
 class robotController():
     def __init__(self) -> None:
         rclpy.init()
         # K: [[ 2.97946709e-07  7.36131891e-05 -1.28508761e+01 -4.14185118e-01]]
-        Q = np.diag([100., 10., 100., 0.1])       # 1e-9, 0.1, 1.0, 1e-4
-        R = np.diag(np.diag([2.5]))   #0.02 2.5
-        q = np.array([0., 0., 0., 0., 0., 0., 1.,
-                            0., -1.18, 2.0, 1., 0.,
-                            0., -1.18, -2.0, 1., 0.])
-        self.robot = urdf_loader.loadRobotModel(urdf_path=URDF_PATH)
-        self.robot.pos = q
-        self.com, self.l_bar = self.robot.calculateCom(plot=False)
-        mass = self.robot.calculateMass()
-        self.lqr_thread = None
-        self.lqr_controller = InvertedPendulumLQR(pos=q, 
-                                                  urdf=URDF_PATH, 
-                                                  wheel_r=WHEEL_RADIUS, 
-                                                  M=WHEEL_MASS, Q=Q, R=R, 
-                                                  delta_t=1/120, 
-                                                  show_animation=False,
-                                                  m=mass,
-                                                  l_bar=self.l_bar,
-                                                  dynamic_K = True,
-                                                  max_l=0.46,
-                                                  min_l=0.07,
-                                                  slice_w=0.03)
-        self.lqr_controller.change_K(self.l_bar)
+        # Q = np.diag([100., 10., 100., 0.1])       # 1e-9, 0.1, 1.0, 1e-4
+        # R = np.diag(np.diag([2.5]))   #0.02 2.5
+        # q = np.array([0., 0., 0., 0., 0., 0., 1.,
+        #                     0., -1.18, 2.0, 1., 0.,
+        #                     0., -1.18, -2.0, 1., 0.])
+        # self.robot = urdf_loader.loadRobotModel(urdf_path=URDF_PATH)
+        # self.robot.pos = q
+        # self.com, self.l_bar = self.robot.calculateCom(plot=False)
+        # mass = self.robot.calculateMass()
+        # self.lqr_thread = None
+        # self.lqr_controller = InvertedPendulumLQR(pos=q, 
+        #                                           urdf=URDF_PATH, 
+        #                                           wheel_r=WHEEL_RADIUS, 
+        #                                           M=WHEEL_MASS, Q=Q, R=R, 
+        #                                           delta_t=1/120, 
+        #                                           show_animation=False,
+        #                                           m=mass,
+        #                                           l_bar=self.l_bar,
+        #                                           dynamic_K = True,
+        #                                           max_l=0.46,
+        #                                           min_l=0.07,
+        #                                           slice_w=0.03)
+        # self.lqr_controller.change_K(self.l_bar)
         # l_bar from 0.1 to 0.37
         # self.jump_flag = False
 
@@ -73,9 +73,9 @@ class robotController():
         else: 
             return False
             
-    def set_motor_cmd(self, motor_number, kp, kd, position, torque=0, velocity=0, scaling=False):
+    def set_motor_cmd(self, motor_number, kp, kd, position=0, torque=0, velocity=0, scaling=False):
         if scaling==False:
-            torque = max(-5, min(torque, 5))
+            torque = max(-3, min(torque, 3))
             cmd = MotorCommand()
             cmd.q = float(position)
             cmd.dq = float(velocity)
@@ -85,7 +85,7 @@ class robotController():
             cmd.kd = float(kd)
             self.cmd_list.motor_cmd[motor_number] = cmd
         else:
-            torque = max(-15, min(torque, 15))
+            torque = max(-10, min(torque, 10))
             cmd = MotorCommand()
             cmd.q = float(position) * SCALE[motor_number] + MOTOR_ORIGIN_POS[motor_number]
             cmd.dq = float(velocity) * SCALE[motor_number]
@@ -139,27 +139,39 @@ class robotController():
         # self.ros_manager.wheel_coordinate = [-0.0639-ORIGIN_BIAS[0], -0.003637-ORIGIN_BIAS[1]]
         # theta1_err, theta2_err = self.get_angle_error(self.ros_manager.wheel_coordinate)     # lock legs coordinate [x, y] (hip joint coordinate (0.0742, 0))
         # self.lqr_controller.change_K(self.l_bar)
-        while self.ros_manager.get_joint_pos('thigh_l') <= 1.271 and self.ros_manager.get_joint_pos('thigh_r') <= 1.271:
-            self.set_motor_cmd(motor_number=1, kp=0, kd=0.05, position=0, torque=0, velocity=0.2, scaling=False)
-            self.set_motor_cmd(motor_number=4, kp=0, kd=0.05, position=0, torque=0, velocity=-0.2, scaling=False)
-            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-            time.sleep(0.001)
-        for i in range(10):                        
-            self.set_motor_cmd(motor_number=1, kp=i, kd=0.12, position=1.271, scaling=True)
-            self.set_motor_cmd(motor_number=4, kp=i, kd=0.12, position=1.271, scaling=True)
+        while self.ros_manager.get_joint_pos('thigh_l') <= 2.4 or self.ros_manager.get_joint_pos('thigh_r') <= 2.4:
+            if self.ros_manager.get_joint_pos('thigh_l') <= 2.4:
+                self.set_motor_cmd(motor_number=1, kp=7, kd=0, position=self.ros_manager.get_joint_pos('thigh_l')+0.01, scaling=True)
+            if self.ros_manager.get_joint_pos('thigh_r') <= 2.4:
+                self.set_motor_cmd(motor_number=4, kp=7, kd=0, position=self.ros_manager.get_joint_pos('thigh_r')+0.01, scaling=True)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.01)
-        while self.ros_manager.get_joint_pos('calf_l') <= -2.12773 and self.ros_manager.get_joint_pos('calf_r') <= -2.12773:
-            self.set_motor_cmd(motor_number=2, kp=0, kd=0, position=0, torque=0.7, velocity=0, scaling=False)
-            self.set_motor_cmd(motor_number=5 ,kp=0, kd=0, position=0, torque=-0.7, velocity=0, scaling=False)
-            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-            time.sleep(0.001)
         for i in range(10):                        
-            self.set_motor_cmd(motor_number=2, kp=i, kd=0.15, position=-2.12773, scaling=True)
-            self.set_motor_cmd(motor_number=5, kp=i, kd=0.15, position=-2.12773, scaling=True)
+            self.set_motor_cmd(motor_number=1, kp=i, kd=0.12, position=2.4, scaling=True)
+            self.set_motor_cmd(motor_number=4, kp=i, kd=0.12, position=2.4, scaling=True)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-            time.sleep(0.01)   
-    
+            time.sleep(0.01)
+        for i in range(10):                        
+            self.set_motor_cmd(motor_number=0, kp=i, kd=0.12, position=0, scaling=True)
+            self.set_motor_cmd(motor_number=3, kp=i, kd=0.12, position=0, scaling=True)
+            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+            time.sleep(0.01)
+        # while self.ros_manager.get_joint_pos('calf_l') <= -1.57 or self.ros_manager.get_joint_pos('calf_r') <= -1.57:
+        #     if self.ros_manager.get_joint_pos('calf_l') <= -1.57:
+        #         self.set_motor_cmd(motor_number=2, kp=0, kd=0, torque=5, scaling=True)
+        #     else:
+        #         self.set_motor_cmd(motor_number=2, kp=7, kd=0.12, position=-1.57, scaling=True)
+        #     if self.ros_manager.get_joint_pos('calf_r') <= -1.57:
+        #         self.set_motor_cmd(motor_number=5, kp=0, kd=0, torque=5, scaling=True)
+        #     else:
+        #         self.set_motor_cmd(motor_number=5, kp=7, kd=0.12, position=-1.57, scaling=True)
+        #     self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+        #     time.sleep(0.01)
+        # for i in range(10):                        
+        #     self.set_motor_cmd(motor_number=2, kp=i, kd=0.12, position=-1.57, scaling=True)
+        #     self.set_motor_cmd(motor_number=5, kp=i, kd=0.12, position=-1.57, scaling=True)
+        #     self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+        #     time.sleep(0.01)
     # def standup(self):
     #     self.ros_manager.wheel_coordinate = [-0.06167-ORIGIN_BIAS[0], 0.1206043-ORIGIN_BIAS[1]]
     #     theta1_err, theta2_err = self.get_angle_error(self.ros_manager.wheel_coordinate)     # lock legs coordinate [x, y] (hip joint coordinate (0.0742, 0))
@@ -276,8 +288,10 @@ class robotController():
         self.ros_manager.get_logger().info("disable controller")
     
     def releaseUnitree(self):
+        self.set_motor_cmd(motor_number=0, kp=0., kd=0, position=0, torque=0, velocity=0)
         self.set_motor_cmd(motor_number=1, kp=0., kd=0, position=0, torque=0, velocity=0)
         self.set_motor_cmd(motor_number=2, kp=0., kd=0, position=0, torque=0, velocity=0)
+        self.set_motor_cmd(motor_number=3, kp=0., kd=0, position=0, torque=0, velocity=0)
         self.set_motor_cmd(motor_number=4, kp=0., kd=0, position=0, torque=0, velocity=0)
         self.set_motor_cmd(motor_number=5, kp=0., kd=0, position=0, torque=0, velocity=0)
         self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
@@ -290,7 +304,7 @@ def main(args=None):
         "start": robot.startController,
         "d": robot.disableController,
         "r": robot.releaseUnitree,
-        "i": robot.init_unitree_motor,
+        # "i": robot.init_unitree_motor,
         "l": robot.locklegs,
         "e": robot.enable_ros_manager,
         # "stand": robot.standup,
@@ -302,7 +316,7 @@ def main(args=None):
             if cmd in command_dict:
                 command_dict[cmd]()
             elif cmd == "exit":
-                robot.disableController()
+                # robot.disableController()
                 robot.releaseUnitree()
                 rclpy.shutdown()
                 break
