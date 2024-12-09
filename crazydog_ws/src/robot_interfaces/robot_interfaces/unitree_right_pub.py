@@ -1,5 +1,6 @@
 import time
 import sys
+sys.path.append('/home/crazydog/crazydog/crazydog_ws/src/robot_interfaces/robot_interfaces/unitree_actuator_sdk/lib')
 sys.path.append('/home/crazydogv2/crazydog/crazydog_ws/src/robot_interfaces/robot_interfaces/unitree_actuator_sdk/lib')
 from unitree_actuator_sdk import * # type: ignorei
 import threading

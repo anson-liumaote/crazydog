@@ -13,18 +13,9 @@ import os
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
 from scipy.spatial.transform import Rotation as R
+import onnxruntime as ort
 
-WHEEL_RADIUS = 0.07     # m
-WHEEL_MASS = 0.28  # kg
-WHEEL_DISTANCE = 0.355
-TORQUE_CONSTRAIN = 1.5
-MOTOR_INIT_POS = [None, 0.669, 1.080, None, 7.5302, 2.320]     # for unitree motors
-INIT_ANGLE = [-2.42, 2.6]
-LOCK_POS = [None, 2.76, 9.88, None, 5.44, -3.10]    # -2.75, 2.0
-THIGH_LENGTH = 0.215
-CALF_LENGTH = 0.215
-ORIGIN_BIAS = [-0.02235, 0.22494]   # bias between hip joint and origin in urdf
-MOTOR_ORIGIN_POS = [0.0, -4.6, 27.8, 0.0, 12.8, -24.4, 0.0, 0.0]
+MOTOR_ORIGIN_POS = [0.0, -5.19, 27.8, 0.0, 13.49, -25.6, 0.0, 0.0]
 SCALE = [6.33, 6.33, 6.33*1.6, 6.33, -6.33, -6.33*1.6, 1.0, 1.0]
 
 class robotController():
@@ -32,7 +23,7 @@ class robotController():
         rclpy.init()
         self.rl_thread = None
         # Initialize ONNX model
-        self.model_path = '/home/crazydog/crazydog/crazydog_ws/src/rl_control/rl_control/model/2024-11-25_17-42-38/exported/policy.onnx'
+        self.model_path = '/home/crazydog/crazydog/crazydog_ws/src/rl_control/rl_control/model/2024-11-24_23-20-58/exported/policy.onnx'
         self.ort_session = ort.InferenceSession(self.model_path)
 
 
@@ -51,16 +42,6 @@ class robotController():
             return True
         else: 
             return False
-    
-    # def scaling(self, id, pos, vel):
-    #     states.position = (os-org)/scale 
-    #     states.velocity = [state/scale for state, scale in zip(states.velocity, self.scale)]
-    #     return states
-
-    def inverse_scaling(self, id, pos, vel):
-        position = pos * SCALE[id] + MOTOR_ORIGIN_POS[id]
-        velocity = vel * SCALE[id]
-        return float(position), float(velocity)
             
     def set_motor_cmd(self, motor_number, kp, kd, position, torque=0, velocity=0, scaling=False):
         if scaling==False:
@@ -74,12 +55,12 @@ class robotController():
             cmd.kd = float(kd)
             self.cmd_list.motor_cmd[motor_number] = cmd
         else:
-            torque = max(-15, min(torque, 15))
+            # torque = max(-10, min(torque, 15))
             cmd = MotorCommand()
             cmd.q = float(position) * SCALE[motor_number] + MOTOR_ORIGIN_POS[motor_number]
             cmd.dq = float(velocity) * SCALE[motor_number]
             # cmd.q, cmd.dq = self.inverse_scaling(position, velocity)
-            cmd.tau = float(torque)/SCALE[motor_number]
+            cmd.tau = max(-1.0, min(float(torque)/SCALE[motor_number], 1.0))
             cmd.kp = float(kp)
             cmd.kd = float(kd)
             self.cmd_list.motor_cmd[motor_number] = cmd
@@ -100,26 +81,6 @@ class robotController():
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
         else:
             print("inital fail")
-
-    
-    def inverse_kinematics(self, x, y, L1=THIGH_LENGTH, L2=CALF_LENGTH):
-        # 計算 d    
-        d = np.sqrt(x**2 + y**2)
-        # 計算 theta2
-        cos_theta2 = (x**2 + y**2 - L1**2 - L2**2) / (2 * L1 * L2)
-        theta2 = np.arccos(cos_theta2)
-        
-        # 計算 theta1
-        theta1 = np.arctan2(y, x) - np.arctan2(L2 * np.sin(theta2), L1 + L2 * np.cos(theta2))
-    
-        return theta1, theta2
-    
-    def get_angle_error(self, axis):
-        theta1, theta2 = self.inverse_kinematics(axis[0], axis[1])
-        theta2 = max(0, min(theta2, 2.618))
-        theta1_err = theta1 - INIT_ANGLE[0]
-        theta2_err = theta2 - INIT_ANGLE[1]
-        return theta1_err, theta2_err
 
     def locklegs(self):
         # self.ros_manager.wheel_coordinate = [-0.0639-ORIGIN_BIAS[0], -0.003637-ORIGIN_BIAS[1]]
@@ -151,6 +112,9 @@ class robotController():
         self.running_flag = True
         self.rl_thread.start()
 
+    def pd_controller(self, kp, tq, q, kd, td, d):
+        return kp * (tq - q) + kd * (td - d)
+
     def controller(self):
         self.ros_manager.get_logger().info('controller start')
         actions = np.zeros(6)  # Initial actions
@@ -181,10 +145,21 @@ class robotController():
 
             # Optionally publish or use actions to control the robot
             print(actions)
-            self.set_motor_cmd(motor_number=1, kp=0, kd=0, position=0, torque=actions[0], velocity=0, scaling=True)
-            self.set_motor_cmd(motor_number=2, kp=0, kd=0, position=0, torque=actions[2], velocity=0, scaling=True)
-            self.set_motor_cmd(motor_number=4, kp=0, kd=0, position=0, torque=actions[1], velocity=0, scaling=True)
-            self.set_motor_cmd(motor_number=5, kp=0, kd=0, position=0, torque=actions[3], velocity=0, scaling=True)
+            tau1 = self.pd_controller(25.0, actions[0], self.ros_manager.joint_pos[0], 0.5, 0.0, self.ros_manager.joint_vel[0])
+            tau2 = self.pd_controller(25.0, actions[2], self.ros_manager.joint_pos[2], 0.5, 0.0, self.ros_manager.joint_vel[1])
+            tau4 = self.pd_controller(25.0, actions[1], self.ros_manager.joint_pos[1], 0.5, 0.0, self.ros_manager.joint_vel[3])
+            tau5 = self.pd_controller(25.0, actions[3], self.ros_manager.joint_pos[3], 0.5, 0.0, self.ros_manager.joint_vel[4])
+            wheel_tau_l = self.pd_controller(0.0, 0.0, 0.0, 0.3, actions[4], self.ros_manager.joint_vel[2])
+            wheel_tau_r = self.pd_controller(0.0, 0.0, 0.0, 0.3, actions[5], self.ros_manager.joint_vel[5])
+
+            self.set_motor_cmd(motor_number=1, kp=0, kd=0, position=0, torque=tau1, velocity=0, scaling=True)
+            self.set_motor_cmd(motor_number=2, kp=0, kd=0, position=0, torque=tau2, velocity=0, scaling=True)
+            self.set_motor_cmd(motor_number=4, kp=0, kd=0, position=0, torque=tau4, velocity=0, scaling=True)
+            self.set_motor_cmd(motor_number=5, kp=0, kd=0, position=0, torque=tau5, velocity=0, scaling=True)
+            # self.set_motor_cmd(motor_number=1, kp=0, kd=0, position=0, torque=actions[0], velocity=0, scaling=True)
+            # self.set_motor_cmd(motor_number=2, kp=0, kd=0, position=0, torque=actions[2], velocity=0, scaling=True)
+            # self.set_motor_cmd(motor_number=4, kp=0, kd=0, position=0, torque=actions[1], velocity=0, scaling=True)
+            # self.set_motor_cmd(motor_number=5, kp=0, kd=0, position=0, torque=actions[3], velocity=0, scaling=True)
 
             # self.set_motor_cmd(motor_number=1, kp=25.0, kd=0.5, position=actions[0]+1.271, torque=0, velocity=0, scaling=True)
             # self.set_motor_cmd(motor_number=2, kp=25.0, kd=0.5, position=actions[2]+1.271, torque=0, velocity=0, scaling=True)
@@ -192,15 +167,10 @@ class robotController():
             # self.set_motor_cmd(motor_number=5, kp=25.0, kd=0.5, position=actions[3]+(-2.12773), torque=0, velocity=0, scaling=True)
             # print(self.cmd_list)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-
-            t1 = time.time()
-            dt = t1-t0
-            print(f'freq, {1/dt}')
-            t0 = t1
             # wheel_tau_l = self.wheel_pid_l.update(actions[4], self.ros_manager.joint_vel[2], 0.02)
             # wheel_tau_r = self.wheel_pid_r.update(actions[5], self.ros_manager.joint_vel[5], 0.02)
-            # print(self.ros_manager.joint_vel[2], self.ros_manager.joint_vel[5])
-            # print(wheel_tau_l, wheel_tau_r)
+            print(self.ros_manager.joint_vel[2], self.ros_manager.joint_vel[5])
+            print(tau1, tau2, tau4, tau5, wheel_tau_l, wheel_tau_r)
             # self.ros_manager.send_foc_command(wheel_tau_l, wheel_tau_r)
             
             self.ros_manager.send_foc_command(actions[4], actions[5])
