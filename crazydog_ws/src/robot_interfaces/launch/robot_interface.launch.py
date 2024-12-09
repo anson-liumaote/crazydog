@@ -31,13 +31,13 @@ def generate_launch_description():
         ),
         Node(
             package='robot_interfaces',
-            executable='unitree_l',
-            name='unitree_l'
+            executable='unitree_left_pub',
+            name='unitree_left_pub'
         ),
         Node(
             package='robot_interfaces',
-            executable='unitree_r',
-            name='unitree_r'
+            executable='unitree_right_pub',
+            name='unitree_right_pub'
         ),
         Node(
             package='robot_interfaces',

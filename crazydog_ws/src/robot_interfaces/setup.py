@@ -30,8 +30,8 @@ setup(
             'joy_controller = robot_interfaces.joy_controller:main',
             'odom_pub = robot_interfaces.odom_pub:main',
             'unitree_pubsub = robot_interfaces.unitree_pubsub_test:main',
-            'unitree_r = robot_interfaces.unitree_r:main',
-            'unitree_l = robot_interfaces.unitree_l:main',
+            'unitree_right_pub = robot_interfaces.unitree_right_pub:main',
+            'unitree_left_pub = robot_interfaces.unitree_left_pub:main',
         ],
     },
 )

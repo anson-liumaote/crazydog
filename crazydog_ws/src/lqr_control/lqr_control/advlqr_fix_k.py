@@ -20,7 +20,7 @@ WHEEL_DISTANCE = 0.355
 URDF_PATH = "/home/crazydog/crazydog/crazydog_ws/src/lqr_control/lqr_control/robot_models/big bipedal robot v1/urdf/big bipedal robot v1.urdf"
 MID_ANGLE = 0.0   #0.05
 TORQUE_CONSTRAIN = 1.5
-MOTOR_INIT_POS = [None, 0.669, 1.080, None, 1.247+2*math.pi, 2.320]     # for unitree motors
+MOTOR_INIT_POS = [None, 0.478, 1.190, None, 1.247+2*math.pi, 0.944]    # for unitree motors
 INIT_ANGLE = [-2.42, 2.6]
 LOCK_POS = [None, 2.76, 9.88, None, 5.44, -3.10]    # -2.75, 2.0
 THIGH_LENGTH = 0.215
@@ -61,10 +61,10 @@ class robotController():
                                                   advance_lqr_K=adva_k)
         self.lqr_controller.change_K(self.l_bar)
         # l_bar from 0.1 to 0.37
-        self.hip_P = 18
+        self.hip_P = 20
         self.hip_D = 0.55
-        self.turn_P = 0.0297
-        self.turn_D = 0.00011
+        self.turn_P = 0.05
+        self.turn_D = 0.0002
         self.knee_P = 0.1
         self.knee_D = 0.05
 
@@ -74,6 +74,8 @@ class robotController():
         self.time_list = []
         self.x_dot_list = []
         self.x_dot_ref_list = []
+        self.acc_x = []
+        self.hip_theta = []
 
     def enable_ros_manager(self):
         self.ros_manager = RosTopicManager()
@@ -134,33 +136,43 @@ class robotController():
         
         plt.figure(figsize=(20,12))
 
-        plt.subplot(5, 1, 1)
+        plt.subplot(6, 1, 1)
         plt.plot(self.time_list, self.phi_list, label="body tilt", color='blue')
         plt.title('lqr Controller')
         plt.ylabel('Phi(rad)')
         plt.xlabel('Time')
         plt.grid(True)
 
-        plt.subplot(5, 1, 2)
+        plt.subplot(6, 1, 2)
         plt.plot(self.time_list, self.X_list, label="robot displacement", color='orange')
         plt.ylabel('Position(m)')
         plt.xlabel('Time')
         plt.grid(True)
 
-        plt.subplot(5, 1, 3)
+        plt.subplot(6, 1, 3)
         plt.plot(self.time_list, self.x_dot_list, label="robot velocity", color='green')
         plt.plot(self.time_list, self.x_dot_ref_list, color='blue')
         plt.ylabel('velocity(m/s)')
         plt.xlabel('Time')
         plt.grid(True)
  
-        plt.subplot(5, 1, 4)
+        plt.subplot(6, 1, 4)
         plt.plot(self.time_list, self.theta_list, label="hip angle", color='red')
         plt.ylabel('Theta(rad)')
         plt.xlabel('Time')
         plt.grid(True)
 
-        # plt.subplot(5, 1, 5)
+        plt.subplot(6, 1, 5)
+        plt.plot(self.time_list, self.acc_x, label="imu_acc_x", color='yellow')
+        plt.ylabel('(m/s^2)')
+        plt.xlabel('Time')
+        plt.grid(True)
+
+        plt.subplot(6, 1, 6)
+        plt.plot(self.time_list, self.hip_theta, label="hip_theta", color='yellow')
+        plt.ylabel('rad')
+        plt.xlabel('Time')
+        plt.grid(True)
         # plt.plot()
         plt.tight_layout()
         plt.savefig('advlqr_controller_output.png')
@@ -279,7 +291,7 @@ class robotController():
     
     def kalman_filter_data_fusion(self, dt, x, P): 
         sigma_v = 0.01 #速度噪聲方差
-        sigma_a = 0.08 #加速度噪聲方差
+        sigma_a = 0.1 #加速度噪聲方差
         sigma_process = 1 #過程噪聲方差
         F = np.array([[1, dt],[0, 1]]) #狀態轉移矩陣
         H = np.eye(2) #量測矩陣
@@ -306,7 +318,7 @@ class robotController():
         leg_bias = 0.150  
         disp_s = 0    
         L_knee_angle_inital = 1.12
-        R_knee_angle_inital = 2.25
+        R_knee_angle_inital = 0.874
         Leg_desire = 0.215
         feed_forward = 55.625
 
@@ -375,14 +387,16 @@ class robotController():
             # self.set_motor_cmd(motor_number=2,torque=L_knee_torque/(6.33*1.6))
             # self.set_motor_cmd(motor_number=5,torque=-R_knee_torque/(6.33*1.6))
 
-            self.ros_manager.send_foc_command(motor_command_left , motor_command_right)
-            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+            # self.ros_manager.send_foc_command(motor_command_left , motor_command_right)
+            # self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
 
             self.phi_list.append(X[4, 0])
             self.theta_list.append(X[0, 0])
             self.x_dot_list.append(X[3, 0])
             self.X_list.append(X[2, 0])
             self.x_dot_ref_list.append(speed)
+            self.acc_x.append(x[1, 0])
+            self.hip_theta.append(self.ros_manager.motor_states[4].q)
             self.time_list.append(current_time)
 
             if abs(X[4, 0]) > math.radians(25) or abs(Lleg_position+X[4, 0]) > math.radians(45) or abs(Rleg_position+X[4, 0]) > math.radians(45) or abs(X_ref[2, 0]-X[2, 0]) > 2.5:     # constrain
