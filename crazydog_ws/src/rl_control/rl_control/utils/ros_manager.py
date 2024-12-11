@@ -64,7 +64,8 @@ class RosManager(Node):
 
     def jointstate_callback(self, msg: JointState):
         self.joint_pos = (np.array([msg.position[1], msg.position[4], msg.position[2], msg.position[5]])-np.array([1.271, 1.271, -2.12773, -2.12773]))
-        self.joint_vel = np.array([msg.velocity[1], msg.velocity[2], msg.velocity[6], msg.velocity[4], msg.velocity[5], msg.velocity[7]])
+        # self.joint_vel = np.array([msg.velocity[1], msg.velocity[2], msg.velocity[6], msg.velocity[4], msg.velocity[5], msg.velocity[7]])
+        self.joint_vel = np.array([msg.velocity[6], msg.velocity[7]])
         # old api
         self.joint_state = msg
         

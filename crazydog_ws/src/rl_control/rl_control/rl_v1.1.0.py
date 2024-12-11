@@ -32,8 +32,6 @@ class robotController():
         self.ros_manager_thread = threading.Thread(target=rclpy.spin, args=(self.ros_manager,), daemon=True)
         self.ros_manager_thread.start()
         self.running_flag = False
-        self.wheel_pid_l = PID(0.3, 0.0, 0.0)
-        self.wheel_pid_r = PID(0.3, 0.0, 0.0)
         self.cmd_list = LowCommand()
         time.sleep(2)
 
@@ -118,8 +116,10 @@ class robotController():
     def controller(self):
         self.ros_manager.get_logger().info('controller start')
         actions = np.zeros(6)  # Initial actions
-        count = 0
-        t0 = time.time()
+        obs_list = []
+        action_list = []
+        output_list = []
+        time_list = []
 
         while self.running_flag:
             with self.ros_manager.ctrl_condition:
@@ -156,25 +156,28 @@ class robotController():
             self.set_motor_cmd(motor_number=2, kp=0, kd=0, position=0, torque=tau2, velocity=0, scaling=True)
             self.set_motor_cmd(motor_number=4, kp=0, kd=0, position=0, torque=tau4, velocity=0, scaling=True)
             self.set_motor_cmd(motor_number=5, kp=0, kd=0, position=0, torque=tau5, velocity=0, scaling=True)
-            # self.set_motor_cmd(motor_number=1, kp=0, kd=0, position=0, torque=actions[0], velocity=0, scaling=True)
-            # self.set_motor_cmd(motor_number=2, kp=0, kd=0, position=0, torque=actions[2], velocity=0, scaling=True)
-            # self.set_motor_cmd(motor_number=4, kp=0, kd=0, position=0, torque=actions[1], velocity=0, scaling=True)
-            # self.set_motor_cmd(motor_number=5, kp=0, kd=0, position=0, torque=actions[3], velocity=0, scaling=True)
-
-            # self.set_motor_cmd(motor_number=1, kp=25.0, kd=0.5, position=actions[0]+1.271, torque=0, velocity=0, scaling=True)
-            # self.set_motor_cmd(motor_number=2, kp=25.0, kd=0.5, position=actions[2]+1.271, torque=0, velocity=0, scaling=True)
-            # self.set_motor_cmd(motor_number=4, kp=25.0, kd=0.5, position=actions[1]+(-2.12773), torque=0, velocity=0, scaling=True)
-            # self.set_motor_cmd(motor_number=5, kp=25.0, kd=0.5, position=actions[3]+(-2.12773), torque=0, velocity=0, scaling=True)
-            # print(self.cmd_list)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-            # wheel_tau_l = self.wheel_pid_l.update(actions[4], self.ros_manager.joint_vel[2], 0.02)
-            # wheel_tau_r = self.wheel_pid_r.update(actions[5], self.ros_manager.joint_vel[5], 0.02)
-            print(self.ros_manager.joint_vel[2], self.ros_manager.joint_vel[5])
             print(tau1, tau2, tau4, tau5, wheel_tau_l, wheel_tau_r)
-            # self.ros_manager.send_foc_command(wheel_tau_l, wheel_tau_r)
+
+            self.ros_manager.send_foc_command(wheel_tau_l, wheel_tau_r)
             
-            self.ros_manager.send_foc_command(actions[4], actions[5])
-            count += 1
+            obs_list.append(input_data)
+            action_list.append(actions)
+            output_list.append(np.array([tau1, tau2, tau4, tau5, wheel_tau_l, wheel_tau_r]))
+            time_list.append(np.array(time.time()))
+
+            if len(time_list)==50:  
+                formated_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                directory = f"/home/crazydog/crazydog/crazydog_ws/src/rl_control/rl_control/log/{formated_time}"
+                os.makedirs(directory, exist_ok=True)  
+                with open(os.path.join(directory, 'obs.plk'), 'wb') as f1:
+                    pickle.dump(obs_list, f1)
+                with open(os.path.join(directory, 'action.plk'), 'wb') as f2:
+                    pickle.dump(action_list, f2)
+                with open(os.path.join(directory, 'output.plk'), 'wb') as f3:
+                    pickle.dump(output_list, f3)
+                with open(os.path.join(directory, 'time.plk'), 'wb') as f4:
+                    pickle.dump(time_list, f4)
 
 
     def disableController(self):
