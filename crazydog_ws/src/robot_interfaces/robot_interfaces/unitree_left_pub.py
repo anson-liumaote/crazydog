@@ -52,7 +52,7 @@ class unitree_communication(object):
                 motor.cmd.q    = 0
                 motor.cmd.dq   = 0
                 motor.cmd.kp   = 0
-                motor.cmd.kd   = 0.05
+                motor.cmd.kd   = 0.1
                 motor.cmd.tau  = 0
                 self.serial.sendRecv(motor.cmd, motor.data)
                 success = False

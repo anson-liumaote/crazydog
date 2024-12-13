@@ -15,7 +15,7 @@ from sensor_msgs.msg import JointState
 from scipy.spatial.transform import Rotation as R
 import onnxruntime as ort
 
-MOTOR_ORIGIN_POS = [0.0, -5.19, 27.8, 0.0, 13.49, -25.6, 0.0, 0.0]
+MOTOR_ORIGIN_POS = [0.0, -4.5, 27.8, 0.0, 14.8, -25.6, 0.0, 0.0]
 SCALE = [6.33, 6.33, 6.33*1.6, 6.33, -6.33, -6.33*1.6, 1.0, 1.0]
 
 class robotController():
@@ -88,7 +88,7 @@ class robotController():
             self.set_motor_cmd(motor_number=4, kp=0, kd=0.05, position=0, torque=0, velocity=-0.2, scaling=False)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.001)
-        for i in range(10):                        
+        for i in range(20):                        
             self.set_motor_cmd(motor_number=1, kp=i, kd=0.12, position=1.271, scaling=True)
             self.set_motor_cmd(motor_number=4, kp=i, kd=0.12, position=1.271, scaling=True)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
@@ -98,7 +98,7 @@ class robotController():
             self.set_motor_cmd(motor_number=5 ,kp=0, kd=0, position=0, torque=-0.7, velocity=0, scaling=False)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.001)
-        for i in range(10):                        
+        for i in range(20):                        
             self.set_motor_cmd(motor_number=2, kp=i, kd=0.15, position=-2.12773, scaling=True)
             self.set_motor_cmd(motor_number=5, kp=i, kd=0.15, position=-2.12773, scaling=True)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
