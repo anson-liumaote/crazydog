@@ -15,7 +15,7 @@ from sensor_msgs.msg import JointState
 from scipy.spatial.transform import Rotation as R
 import onnxruntime as ort
 
-MOTOR_ORIGIN_POS = [0.0, -5.19, 27.8, 0.0, 13.49, -25.6, 0.0, 0.0]
+MOTOR_ORIGIN_POS = [0.0, -4.5, 27.8, 0.0, 14.8, -25.6, 0.0, 0.0]
 SCALE = [6.33, 6.33, 6.33*1.6, 6.33, -6.33, -6.33*1.6, 1.0, 1.0]
 
 class robotController():
@@ -182,8 +182,9 @@ class robotController():
 
     def disableController(self):
         self.running_flag = False
-        self.ros_manager.send_foc_command(0.0, 0.0)
-        self.releaseUnitree()
+        for i in range(5):
+            self.ros_manager.send_foc_command(0.0, 0.0)
+            self.releaseUnitree()
         if self.rl_thread is not None:
             self.rl_thread.join()
             print('rl_joined')

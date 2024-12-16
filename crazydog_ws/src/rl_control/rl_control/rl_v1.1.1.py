@@ -23,7 +23,7 @@ class robotController():
         rclpy.init()
         self.rl_thread = None
         # Initialize ONNX model
-        self.model_path = '/home/crazydog/crazydog/crazydog_ws/src/rl_control/rl_control/model/2024-12-10_22-19-38/exported/policy.onnx'
+        self.model_path = '/home/crazydog/crazydog/crazydog_ws/src/rl_control/rl_control/model/2024-12-13_11-02-53/exported/policy.onnx'
         self.ort_session = ort.InferenceSession(self.model_path)
 
 
@@ -149,8 +149,8 @@ class robotController():
             # tau2 = self.pd_controller(25.0, actions[2], self.ros_manager.joint_pos[2], 0.5, 0.0, self.ros_manager.joint_vel[1])
             # tau4 = self.pd_controller(25.0, actions[1], self.ros_manager.joint_pos[1], 0.5, 0.0, self.ros_manager.joint_vel[3])
             # tau5 = self.pd_controller(25.0, actions[3], self.ros_manager.joint_pos[3], 0.5, 0.0, self.ros_manager.joint_vel[4])
-            wheel_tau_l = self.pd_controller(0.0, 0.0, 0.0, 0.3, actions[0], self.ros_manager.joint_vel[0])
-            wheel_tau_r = self.pd_controller(0.0, 0.0, 0.0, 0.3, actions[1], self.ros_manager.joint_vel[1])
+            wheel_tau_l = self.pd_controller(0.0, 0.0, 0.0, 0.1, actions[0], self.ros_manager.joint_vel[0])
+            wheel_tau_r = self.pd_controller(0.0, 0.0, 0.0, 0.1, actions[1], self.ros_manager.joint_vel[1])
 
             # self.set_motor_cmd(motor_number=1, kp=0, kd=0, position=0, torque=tau1, velocity=0, scaling=True)
             # self.set_motor_cmd(motor_number=2, kp=0, kd=0, position=0, torque=tau2, velocity=0, scaling=True)
@@ -184,8 +184,9 @@ class robotController():
 
     def disableController(self):
         self.running_flag = False
-        self.ros_manager.send_foc_command(0.0, 0.0)
-        self.releaseUnitree()
+        for i in range(5):
+            self.ros_manager.send_foc_command(0.0, 0.0)
+            self.releaseUnitree()
         if self.rl_thread is not None:
             self.rl_thread.join()
             print('rl_joined')
