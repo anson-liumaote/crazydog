@@ -60,6 +60,7 @@ class focCommandSubscriber(Node):
             
         except can.CanError:
             self.get_logger().error("CAN failed to send message")
+            self.timer.cancel()
 
     def int_to_high_low_bytes(self, value):
         high_byte = (value >> 8) & 0xFF  # Extract the high byte

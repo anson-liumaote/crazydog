@@ -85,7 +85,7 @@ class robotController():
             cmd.kd = float(kd)
             self.cmd_list.motor_cmd[motor_number] = cmd
         else:
-            torque = max(-10, min(torque, 10))
+            torque = max(-20, min(torque, 20))
             cmd = MotorCommand()
             cmd.q = float(position) * SCALE[motor_number] + MOTOR_ORIGIN_POS[motor_number]
             cmd.dq = float(velocity) * SCALE[motor_number]
@@ -139,39 +139,62 @@ class robotController():
         # self.ros_manager.wheel_coordinate = [-0.0639-ORIGIN_BIAS[0], -0.003637-ORIGIN_BIAS[1]]
         # theta1_err, theta2_err = self.get_angle_error(self.ros_manager.wheel_coordinate)     # lock legs coordinate [x, y] (hip joint coordinate (0.0742, 0))
         # self.lqr_controller.change_K(self.l_bar)
-        while self.ros_manager.get_joint_pos('thigh_l') <= 2.4 or self.ros_manager.get_joint_pos('thigh_r') <= 2.4:
-            if self.ros_manager.get_joint_pos('thigh_l') <= 2.4:
-                self.set_motor_cmd(motor_number=1, kp=7, kd=0, position=self.ros_manager.get_joint_pos('thigh_l')+0.01, scaling=True)
-            if self.ros_manager.get_joint_pos('thigh_r') <= 2.4:
-                self.set_motor_cmd(motor_number=4, kp=7, kd=0, position=self.ros_manager.get_joint_pos('thigh_r')+0.01, scaling=True)
-            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-            time.sleep(0.01)
-        for i in range(10):                        
-            self.set_motor_cmd(motor_number=1, kp=i, kd=0.12, position=2.4, scaling=True)
-            self.set_motor_cmd(motor_number=4, kp=i, kd=0.12, position=2.4, scaling=True)
-            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-            time.sleep(0.01)
-        for i in range(10):                        
-            self.set_motor_cmd(motor_number=0, kp=i, kd=0.12, position=0, scaling=True)
-            self.set_motor_cmd(motor_number=3, kp=i, kd=0.12, position=0, scaling=True)
-            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-            time.sleep(0.01)
-        # while self.ros_manager.get_joint_pos('calf_l') <= -1.57 or self.ros_manager.get_joint_pos('calf_r') <= -1.57:
-        #     if self.ros_manager.get_joint_pos('calf_l') <= -1.57:
-        #         self.set_motor_cmd(motor_number=2, kp=0, kd=0, torque=5, scaling=True)
-        #     else:
-        #         self.set_motor_cmd(motor_number=2, kp=7, kd=0.12, position=-1.57, scaling=True)
-        #     if self.ros_manager.get_joint_pos('calf_r') <= -1.57:
-        #         self.set_motor_cmd(motor_number=5, kp=0, kd=0, torque=5, scaling=True)
-        #     else:
-        #         self.set_motor_cmd(motor_number=5, kp=7, kd=0.12, position=-1.57, scaling=True)
+        # while self.ros_manager.get_joint_pos('thigh_l') <= 2.4 or self.ros_manager.get_joint_pos('thigh_r') <= 2.4:
+        #     if self.ros_manager.get_joint_pos('thigh_l') <= 2.4:
+        #         self.set_motor_cmd(motor_number=1, kp=7, kd=0, position=self.ros_manager.get_joint_pos('thigh_l')+0.01, scaling=True)
+        #     if self.ros_manager.get_joint_pos('thigh_r') <= 2.4:
+        #         self.set_motor_cmd(motor_number=4, kp=7, kd=0, position=self.ros_manager.get_joint_pos('thigh_r')+0.01, scaling=True)
         #     self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
         #     time.sleep(0.01)
         # for i in range(10):                        
-        #     self.set_motor_cmd(motor_number=2, kp=i, kd=0.12, position=-1.57, scaling=True)
-        #     self.set_motor_cmd(motor_number=5, kp=i, kd=0.12, position=-1.57, scaling=True)
+        #     self.set_motor_cmd(motor_number=1, kp=i, kd=0.12, position=2.4, scaling=True)
+        #     self.set_motor_cmd(motor_number=4, kp=i, kd=0.12, position=2.4, scaling=True)
         #     self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
         #     time.sleep(0.01)
+        # for i in range(10):                        
+        #     self.set_motor_cmd(motor_number=0, kp=i, kd=0.12, position=0, scaling=True)
+        #     self.set_motor_cmd(motor_number=3, kp=i, kd=0.12, position=0, scaling=True)
+        #     self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+        #     time.sleep(0.01)
+        for i in range(20):                        
+            self.set_motor_cmd(motor_number=1, kp=i, kd=0.12, position=self.ros_manager.get_joint_pos('thigh_l'), scaling=True)
+            self.set_motor_cmd(motor_number=4, kp=i, kd=0.12, position=self.ros_manager.get_joint_pos('thigh_r'), scaling=True)
+            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+            time.sleep(0.01)
+        while self.ros_manager.get_joint_pos('hip_l') >= 0.0 or self.ros_manager.get_joint_pos('hip_r') <= 0.0:
+            if self.ros_manager.get_joint_pos('hip_l') >= 0.0:
+                self.set_motor_cmd(motor_number=0, kp=0, kd=0, torque=-13, scaling=True)
+            else:
+                self.set_motor_cmd(motor_number=0, kp=7, kd=0.12, position=0.0, scaling=True)
+            if self.ros_manager.get_joint_pos('hip_r') <= 0.0:
+                self.set_motor_cmd(motor_number=3, kp=0, kd=0, torque=13, scaling=True)
+            else:
+                self.set_motor_cmd(motor_number=3, kp=7, kd=0.12, position=0.0, scaling=True)
+            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+            time.sleep(0.01)
+        for i in range(20):                        
+            self.set_motor_cmd(motor_number=0, kp=i, kd=0.12, position=0.0, scaling=True)
+            self.set_motor_cmd(motor_number=3, kp=i, kd=0.12, position=0.0, scaling=True)
+            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+            time.sleep(0.01)
+
+        while self.ros_manager.get_joint_pos('calf_l') <= -1.57 or self.ros_manager.get_joint_pos('calf_r') <= -1.57:
+            if self.ros_manager.get_joint_pos('calf_l') <= -1.57:
+                self.set_motor_cmd(motor_number=2, kp=0, kd=0, torque=6, scaling=True)
+            else:
+                self.set_motor_cmd(motor_number=2, kp=7, kd=0.12, position=-1.57, scaling=True)
+            if self.ros_manager.get_joint_pos('calf_r') <= -1.57:
+                self.set_motor_cmd(motor_number=5, kp=0, kd=0, torque=6, scaling=True)
+            else:
+                self.set_motor_cmd(motor_number=5, kp=7, kd=0.12, position=-1.57, scaling=True)
+            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+            time.sleep(0.01)
+        for i in range(20):                        
+            self.set_motor_cmd(motor_number=2, kp=i, kd=0.12, position=-1.57, scaling=True)
+            self.set_motor_cmd(motor_number=5, kp=i, kd=0.12, position=-1.57, scaling=True)
+            self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+            time.sleep(0.01)
+
     # def standup(self):
     #     self.ros_manager.wheel_coordinate = [-0.06167-ORIGIN_BIAS[0], 0.1206043-ORIGIN_BIAS[1]]
     #     theta1_err, theta2_err = self.get_angle_error(self.ros_manager.wheel_coordinate)     # lock legs coordinate [x, y] (hip joint coordinate (0.0742, 0))
