@@ -23,7 +23,7 @@ class robotController():
         rclpy.init()
         self.rl_thread = None
         # Initialize ONNX model
-        self.model_path = '/home/crazydog/crazydog/crazydog_ws/src/rl_control/rl_control/model/2024-12-13_11-02-53/exported/policy.onnx'
+        self.model_path = '/home/crazydog/crazydog/crazydog_ws/src/rl_control/rl_control/model/2024-12-16_17-31-34/exported/policy.onnx'
         self.ort_session = ort.InferenceSession(self.model_path)
 
 
