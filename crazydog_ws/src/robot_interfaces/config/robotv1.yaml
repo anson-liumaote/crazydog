@@ -52,4 +52,4 @@ jointstate_pub:
 odom_pub:  
   ros__parameters:
     wheel_radius: 0.07
-    wheel_distance: 0.355
+    wheel_distance: 0.36

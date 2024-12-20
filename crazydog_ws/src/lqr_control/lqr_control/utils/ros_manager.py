@@ -25,6 +25,7 @@ class RosManager(Node):
         self.foc_command_publisher = self.create_publisher(Float32MultiArray, 'foc_command', 1)
         self.imu_monitor = self.create_publisher(Float32, 'imu_monitor', 1)
         self.tau_monitor = self.create_publisher(Float32, 'tau_monitor', 1)
+        self.control_timer = self.create_timer(1/100, self.control_timer_callback) 
         self.row = 0
         self.row_last = 0
         self.row_dot = 0
@@ -46,13 +47,16 @@ class RosManager(Node):
         self.joint_state = JointState()
         self.odom = Odometry()
 
+    def control_timer_callback(self):
+        # notify inference ctrl
+        with self.ctrl_condition:
+            self.ctrl_condition.notify()
+
     def jointstate_callback(self, msg: JointState):
         self.joint_state = msg
 
     def odom_callback(self, msg: Odometry):
         self.odom = msg
-        with self.ctrl_condition:
-            self.ctrl_condition.notify()
     
     def body_pose_callback(self, msg):
         if msg.data == "up":

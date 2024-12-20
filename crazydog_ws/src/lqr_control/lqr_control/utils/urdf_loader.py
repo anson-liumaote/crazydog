@@ -76,6 +76,8 @@ class loadRobotModel():
                 return oMi.translation[0]
             elif name=='wheel_r' or name=='wheel_l':
                 return oMi.translation[0]
+            elif name=='L_calf2wheel' or name=='R_calf2wheel':
+                return oMi.translation[0]
     
 
 if __name__=="__main__":

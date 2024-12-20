@@ -23,7 +23,7 @@ class robotController():
         rclpy.init()
         self.rl_thread = None
         # Initialize ONNX model
-        self.model_path = '/home/crazydog/crazydog/crazydog_ws/src/rl_control/rl_control/model/2024-12-19_13-17-56/exported/policy.onnx'
+        self.model_path = '/home/crazydog/crazydog/crazydog_ws/src/rl_control/rl_control/model/2024-12-20_15-48-08/exported/policy.onnx'
         self.ort_session = ort.InferenceSession(self.model_path)
 
 
@@ -122,6 +122,7 @@ class robotController():
         action_list = []
         output_list = []
         time_list = []
+        t0 = time.time()
 
         while self.running_flag:
             with self.ros_manager.ctrl_condition:
@@ -138,7 +139,7 @@ class robotController():
             ]).astype(np.float32).reshape(1, -1)  # Model expects (1, 24)
 
             # Run inference
-            print(input_data)
+            # print(input_data)
             input_name = self.ort_session.get_inputs()[0].name
             outputs = self.ort_session.run(None, {input_name: input_data})
             
@@ -146,13 +147,13 @@ class robotController():
             actions = outputs[0].flatten()  # Assuming model output is (1, 4) for actions
 
             # Optionally publish or use actions to control the robot
-            print(actions)
+            # print(actions)
             # tau1 = self.pd_controller(25.0, actions[0], self.ros_manager.joint_pos[0], 0.5, 0.0, self.ros_manager.joint_vel[0])
             # tau2 = self.pd_controller(25.0, actions[2], self.ros_manager.joint_pos[2], 0.5, 0.0, self.ros_manager.joint_vel[1])
             # tau4 = self.pd_controller(25.0, actions[1], self.ros_manager.joint_pos[1], 0.5, 0.0, self.ros_manager.joint_vel[3])
             # tau5 = self.pd_controller(25.0, actions[3], self.ros_manager.joint_pos[3], 0.5, 0.0, self.ros_manager.joint_vel[4])
-            wheel_tau_l = self.pd_controller(0.0, 0.0, 0.0, 0.1, actions[0], self.ros_manager.joint_vel[0])
-            wheel_tau_r = self.pd_controller(0.0, 0.0, 0.0, 0.1, actions[1], self.ros_manager.joint_vel[1])
+            wheel_tau_l = self.pd_controller(0.0, 0.0, 0.0, 0.05, actions[0], self.ros_manager.joint_vel[0])
+            wheel_tau_r = self.pd_controller(0.0, 0.0, 0.0, 0.05, actions[1], self.ros_manager.joint_vel[1])
 
             # self.set_motor_cmd(motor_number=1, kp=0, kd=0, position=0, torque=tau1, velocity=0, scaling=True)
             # self.set_motor_cmd(motor_number=2, kp=0, kd=0, position=0, torque=tau2, velocity=0, scaling=True)
@@ -169,6 +170,8 @@ class robotController():
             # output_list.append(np.array([tau1, tau2, tau4, tau5, wheel_tau_l, wheel_tau_r]))
             output_list.append(np.array([wheel_tau_l, wheel_tau_r]))
             time_list.append(np.array(time.time()))
+            # print(1/(time.time()-t0))
+            t0 = time.time()
 
             if len(time_list)==50:  
                 formated_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

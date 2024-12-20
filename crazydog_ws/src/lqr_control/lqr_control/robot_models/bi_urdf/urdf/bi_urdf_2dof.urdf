@@ -1,0 +1,809 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="bi_urdf">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.01096 0.00049 -0.08447"
+        rpy="0 0 0" />
+      <mass
+        value="1.7" />
+      <inertia
+        ixx="0.01982751490"
+        ixy="-0.00000294181"
+        ixz="-0.00095254067"
+        iyy="0.02421281189"
+        iyz="-0.00012740135"
+        izz="0.01088542480" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="orin_Link">
+    <inertial>
+      <origin
+        xyz="-0.11589 -0.00301 -0.06043"
+        rpy="0 0 0" />
+      <mass
+        value="0.3" />
+      <inertia
+        ixx="0.00166804201"
+        ixy="0.00011159300"
+        ixz="0.00209936068"
+        iyy="0.00544430491"
+        iyz="0.00006735551"
+        izz="0.00436559892" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/orin_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.2 0.2 0.2 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/orin_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="orin"
+    type="fixed">
+    <origin
+      xyz="-0.0918148109842786 -0.0249000000000198 -0.117725"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="orin_Link" />
+    <axis
+      xyz="1 0 0" />
+  </joint>
+  <link
+    name="bat_Link">
+    <inertial>
+      <origin
+        xyz="-0.01301 0.00224 -0.15741"
+        rpy="0 0 0" />
+      <mass
+        value="0.672" />
+      <inertia
+        ixx="0.01716082946"
+        ixy="-0.00007406882"
+        ixz="0.00137593403"
+        iyy="0.01790777770"
+        iyz="-0.00023653965"
+        izz="0.00156126730" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/bat_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.2 0.2 0.2 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/bat_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="bat"
+    type="fixed">
+    <origin
+      xyz="-0.0416148109842793 0 -0.179925"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="bat_Link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="r_Link">
+    <inertial>
+      <origin
+        xyz="-0.07425 -0.05625 -0.05478"
+        rpy="0 0 0" />
+      <mass
+        value="0.536" />
+      <inertia
+        ixx="0.00385840237"
+        ixy="0.00223851348"
+        ixz="0.00217989897"
+        iyy="0.00490117750"
+        iyz="0.00165143864"
+        izz="0.00497878575" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/r_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/r_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_hip_fix"
+    type="fixed">
+    <origin
+      xyz="-0.0535148109842786 -0.0562500000000304 -0.0547752717334899"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="r_Link" />
+    <axis
+      xyz="1 0 0" />
+  </joint>
+  <link
+    name="rr_Link">
+    <inertial>
+      <origin
+        xyz="-0.00438 -0.05542 -0.05478"
+        rpy="0 0 0" />
+      <mass
+        value="0.573" />
+      <inertia
+        ixx="0.00383568778"
+        ixy="0.00013811236"
+        ixz="0.00013731680"
+        iyy="0.00239093643"
+        iyz="0.00173931666"
+        izz="0.00219709425" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/rr_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0 1 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/rr_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_base2hip"
+    type="fixed">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="r_Link" />
+    <child
+      link="rr_Link" />
+    <axis
+      xyz="1 0 0" />
+  </joint>
+  <link
+    name="rrr_Link">
+    <inertial>
+      <origin
+        xyz="-0.00024 -0.10799 -0.05471"
+        rpy="0 0 0" />
+      <mass
+        value="0.614" />
+      <inertia
+        ixx="0.00945726496"
+        ixy="0.00001600371"
+        ixz="0.00000542533"
+        iyy="0.00249493205"
+        iyz="0.00362498764"
+        izz="0.00764470258"/>
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/rrr_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/rrr_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_thigh_fix"
+    type="fixed">
+    <origin
+      xyz="0.0532497748906444 -0.0144424855132765 0"
+      rpy="0 0 0" />
+    <parent
+      link="rr_Link" />
+    <child
+      link="rrr_Link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="ru_Link">
+    <inertial>
+      <origin
+        xyz="-0.00031 -0.14157 -0.12137"
+        rpy="0 0 0" />
+      <mass
+        value="0.509" />
+      <inertia
+        ixx="0.02061237381"
+        ixy="0.00002202123"
+        ixz="0.00002107744"
+        iyy="0.01058887989"
+        iyz="0.00875093742"
+        izz="0.01049155470" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/ru_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0 0 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/ru_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_hip2thigh"
+    type="fixed">
+    <origin
+      xyz="0 -0.0577075781855466 0"
+      rpy="0 1.2164473167519347 0" />
+    <parent
+      link="rrr_Link" />
+    <child
+      link="ru_Link" />
+    <axis
+      xyz="0 1 0" />
+    <!-- <limit
+      lower="0.0"
+      upper="1.57"
+      effort="23.7"
+      velocity="30.0" /> -->
+  </joint>
+  <link
+    name="rd_Link">
+    <inertial>
+      <origin
+        xyz="-0.00024 -0.14959 -0.42253"
+        rpy="0 0 0" />
+      <mass
+        value="0.555" />
+      <inertia
+        ixx="0.11532470912"
+        ixy="0.00002022234"
+        ixz="0.00005874163"
+        iyy="0.10294684138"
+        iyz="0.03531163220"
+        izz="0.01264523627" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/rd_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/rd_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_thigh2calf"
+    type="fixed">
+    <origin
+      xyz="0 0 -0.214999999999999"
+      rpy="0 -2.139803613507067 0" />
+    <parent
+      link="ru_Link" />
+    <child
+      link="rd_Link" />
+    <axis
+      xyz="0 1 0" />
+    <!-- <limit
+      lower="-2.61"
+      upper="0.0"
+      effort="23.7"
+      velocity="30.0" /> -->
+  </joint>
+  <link
+    name="rw_Link">
+    <inertial>
+      <origin
+        xyz="-0.00027 -0.17228 -0.48478"
+        rpy="0 0 0" />
+      <mass
+        value="0.280" />
+      <inertia
+        ixx="0.07457085746"
+        ixy="0.00001278481"
+        ixz="0.00003597494"
+        iyy="0.06668599518"
+        iyz="0.02338459699"
+        izz="0.00876875684" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/rw_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.2 0.2 0.2 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/rw_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_calf2wheel"
+    type="continuous">
+    <origin
+      xyz="0 -0.0286806801421281 -0.215"
+      rpy="0 0 0" />
+    <parent
+      link="rd_Link" />
+    <child
+      link="rw_Link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="l_Link">
+    <inertial>
+      <origin
+        xyz="-0.07425 0.05625 -0.05478"
+        rpy="0 0 0" />
+      <mass
+        value="0.536" />
+      <inertia
+        ixx="0.00385839628"
+        ixy="-0.00223851548"
+        ixz="0.00217989254"
+        iyy="0.00490116608"
+        iyz="-0.00165142968"
+        izz="0.00497879081" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/l_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/l_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_hip_fix"
+    type="fixed">
+    <origin
+      xyz="-0.0535148109842794 0.0562499999999701 -0.0547752717334901"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="l_Link" />
+    <axis
+      xyz="1 0 0" />
+  </joint>
+  <link
+    name="ll_Link">
+    <inertial>
+      <origin
+        xyz="-0.00438 0.05542 -0.05478"
+        rpy="0 0 0" />
+      <mass
+        value="0.573" />
+      <inertia
+        ixx="0.00383572240"
+        ixy="-0.00013818708"
+        ixz="0.00013738311"
+        iyy="0.00239093628"
+        iyz="-0.00173932479"
+        izz="0.00219705608" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/ll_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0 1 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/ll_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_base2hip"
+    type="fixed">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="l_Link" />
+    <child
+      link="ll_Link" />
+    <axis
+      xyz="1 0 0" />
+  </joint>
+  <link
+    name="lll_Link">
+    <inertial>
+      <origin
+        xyz="-0.00023 0.10799 -0.05471"
+        rpy="0 0 0" />
+      <mass
+        value="0.614" />
+      <inertia
+        ixx="0.00945717399"
+        ixy="-0.00001578284"
+        ixz="0.00000524000"
+        iyy="0.00249493047"
+        iyz="-0.00362501369"
+        izz="0.00764450217" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/lll_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/lll_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_thigh_fix"
+    type="fixed">
+    <origin
+      xyz="0.0532497748906447 0.0144424855132758 0"
+      rpy="0 0 0" />
+    <parent
+      link="ll_Link" />
+    <child
+      link="lll_Link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="lu_Link">
+    <inertial>
+      <origin
+        xyz="-0.00031 0.14157 -0.12137"
+        rpy="0 0 0" />
+      <mass
+        value="0.509" />
+      <inertia
+        ixx="0.02061220484"
+        ixy="-0.00002207751"
+        ixz="0.00002110824"
+        iyy="0.01058873621"
+        iyz="-0.00875083739"
+        izz="0.01049154602" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/lu_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0 0 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/lu_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_hip2thigh"
+    type="fixed">
+    <origin
+      xyz="0 0.0577075781855487 0"
+      rpy="0 1.2164473167519347 0" />
+    <parent
+      link="lll_Link" />
+    <child
+      link="lu_Link" />
+    <axis
+      xyz="0 1 0" />
+    <!-- <limit
+      lower="0.0"
+      upper="1.57"
+      effort="23.7"
+      velocity="30.0" /> -->
+  </joint>
+  <link
+    name="ld_Link">
+    <inertial>
+      <origin
+        xyz="-0.00024 0.14959 -0.42253"
+        rpy="0 0 0" />
+      <mass
+        value="0.555" />
+      <inertia
+        ixx="0.11532533580"
+        ixy="-0.00002018862"
+        ixz="0.00005861271"
+        iyy="0.10294753695"
+        iyz="-0.03531167285"
+        izz="0.01264518379" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/ld_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/ld_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_thigh2calf"
+    type="fixed">
+    <origin
+      xyz="0 0 -0.215"
+      rpy="0 -2.139803613507067 0" />
+    <parent
+      link="lu_Link" />
+    <child
+      link="ld_Link" />
+    <axis
+      xyz="0 1 0" />
+    <!-- <limit
+      lower="-2.61"
+      upper="0.0"
+      effort="23.7"
+      velocity="30.0" /> -->
+  </joint>
+  <link
+    name="lw_Link">
+    <inertial>
+      <origin
+        xyz="-0.00027 0.17228 -0.48478"
+        rpy="0 0 0" />
+      <mass
+        value="0.280" />
+      <inertia
+        ixx="0.07457085723"
+        ixy="-0.00001278479"
+        ixz="0.00003597588"
+        iyy="0.06668599063"
+        iyz="-0.02338459699"
+        izz="0.00876875253" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/lw_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.2 0.2 0.2 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://bi_urdf/meshes/lw_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_calf2wheel"
+    type="continuous">
+    <origin
+      xyz="0 0.0286806801421289 -0.215"
+      rpy="0 0 0" />
+    <parent
+      link="ld_Link" />
+    <child
+      link="lw_Link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+</robot>
