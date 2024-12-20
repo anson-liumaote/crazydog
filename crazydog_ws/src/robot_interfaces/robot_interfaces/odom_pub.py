@@ -75,7 +75,7 @@ class OdometryNode(Node):
     def rotate_quaternion_90_z(self, q):
         r, p, y = self.euler_from_quaternion(q[0], q[1], q[2], q[3])
         rn = p
-        pn = -r-0.06
+        pn = -r
         # yn = y + np.pi/2
         yn = self.theta
         qn = self.get_quaternion_from_euler(rn, pn, yn)

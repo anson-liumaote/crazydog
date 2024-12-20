@@ -77,7 +77,8 @@ class RosManager(Node):
         self.base_lin_vel[2] = msg.twist.twist.linear.z
         self.base_ang_vel[0] = msg.twist.twist.angular.x
         self.base_ang_vel[1] = msg.twist.twist.angular.y
-        self.base_ang_vel[2] = msg.twist.twist.angular.z
+        # self.base_ang_vel[2] = msg.twist.twist.angular.z
+        self.base_ang_vel[2] = 0.0
         # Update other inputs as needed, e.g., projected gravity
         self.projected_gravity = self.get_projected_gravity(msg)
         # old api

@@ -12,6 +12,7 @@ import pickle
 from datetime import datetime
 import os
 from utils import urdf_loader
+import matplotlib.pyplot as plt
 
 WHEEL_RADIUS = 0.07     # m
 WHEEL_MASS = 0.695  # kg
@@ -19,7 +20,7 @@ WHEEL_DISTANCE = 0.355
 URDF_PATH = "/home/crazydog/crazydog/crazydog_ws/src/lqr_control/lqr_control/robot_models/big bipedal robot v1/urdf/big bipedal robot v1.urdf"
 MID_ANGLE = 0.0   #0.05
 TORQUE_CONSTRAIN = 1.5
-MOTOR_INIT_POS = [None, 0.669, 1.080, None, 1.247+2*math.pi, 2.320]     # for unitree motors
+MOTOR_INIT_POS = [None, 0.478, 1.190, None, 1.247+2*math.pi, 0.944]    # for unitree motors
 INIT_ANGLE = [-2.42, 2.6]
 LOCK_POS = [None, 2.76, 9.88, None, 5.44, -3.10]    # -2.75, 2.0
 THIGH_LENGTH = 0.215
@@ -34,8 +35,12 @@ class robotController():
         q = np.array([0., 0., 0., 0., 0., 0., 1.,
                             0., -1.18, 2.0, 1., 0.,
                             0., -1.18, 2.0, 1., 0.])
-        adva_k = np.array([[-6.3641 ,-0.6496 ,-0.3503 ,-0.7082 ,2.9281 ,0.4571],
-                          [4.0263  ,-0.0470 ,-0.0153  ,-0.0681 ,7.8724  ,0.7800]])
+        adva_k = np.array([[-7.1176   ,-0.5863   ,-0.4869   ,-0.8220    ,2.9448    ,0.4212],
+                          [7.2087    ,0.3191    ,0.4390    ,0.6566    ,6.6901    ,0.6554]])
+        #[-7.2468 ,-0.9553 ,-0.9533 ,-1.4048 ,3.5574 ,0.5730],
+        #[4.1840 ,0.1985 ,-0.0127  ,-0.0743 ,7.8870 ,0.7830]
+        # ([[-6.8033 ,-0.7575 ,-0.7423 ,-1.1602 ,3.3082 ,0.5328],
+        #  [4.4794  ,0.0089 ,0.1080  ,0.0777 ,7.7223 ,0.7510]])
         self.robot = urdf_loader.loadRobotModel(urdf_path=URDF_PATH)
         self.robot.pos = q
         self.com, self.l_bar = self.robot.calculateCom(plot=False)
@@ -56,7 +61,21 @@ class robotController():
                                                   advance_lqr_K=adva_k)
         self.lqr_controller.change_K(self.l_bar)
         # l_bar from 0.1 to 0.37
+        self.hip_P = 20
+        self.hip_D = 0.55
+        self.turn_P = 0.05
+        self.turn_D = 0.0002
+        self.knee_P = 0.1
+        self.knee_D = 0.05
 
+        self.phi_list = []
+        self.theta_list = []
+        self.X_list = []
+        self.time_list = []
+        self.x_dot_list = []
+        self.x_dot_ref_list = []
+        self.acc_x = []
+        self.hip_theta = []
 
     def enable_ros_manager(self):
         self.ros_manager = RosTopicManager()
@@ -64,7 +83,10 @@ class robotController():
         self.ros_manager_thread.start()
         self.running_flag = False
         self.adva_running_flag = False
-        self.turning_pid = PID(0.5, 0, 0.0001)
+        self.turning_pid2 = PID(self.turn_P, 0, self.turn_D)
+        self.hip_pid = PID(self.hip_P ,0, self.hip_D)
+        self.knee_pid1 = PID(self.knee_P,0, self.knee_D)
+        self.knee_pid2 = PID(self.knee_P,0, self.knee_D)
         self.cmd_list = LowCommand()
         time.sleep(2)
 
@@ -109,7 +131,52 @@ class robotController():
             # unitree2.inital_check()
         else:
             print("inital fail")
+    
+    def plotResult(self):
+        
+        plt.figure(figsize=(20,12))
 
+        plt.subplot(6, 1, 1)
+        plt.plot(self.time_list, self.phi_list, label="body tilt", color='blue')
+        plt.title('lqr Controller')
+        plt.ylabel('Phi(rad)')
+        plt.xlabel('Time')
+        plt.grid(True)
+
+        plt.subplot(6, 1, 2)
+        plt.plot(self.time_list, self.X_list, label="robot displacement", color='orange')
+        plt.ylabel('Position(m)')
+        plt.xlabel('Time')
+        plt.grid(True)
+
+        plt.subplot(6, 1, 3)
+        plt.plot(self.time_list, self.x_dot_list, label="robot velocity", color='green')
+        plt.plot(self.time_list, self.x_dot_ref_list, color='blue')
+        plt.ylabel('velocity(m/s)')
+        plt.xlabel('Time')
+        plt.grid(True)
+ 
+        plt.subplot(6, 1, 4)
+        plt.plot(self.time_list, self.theta_list, label="hip angle", color='red')
+        plt.ylabel('Theta(rad)')
+        plt.xlabel('Time')
+        plt.grid(True)
+
+        plt.subplot(6, 1, 5)
+        plt.plot(self.time_list, self.acc_x, label="imu_acc_x", color='yellow')
+        plt.ylabel('(m/s^2)')
+        plt.xlabel('Time')
+        plt.grid(True)
+
+        plt.subplot(6, 1, 6)
+        plt.plot(self.time_list, self.hip_theta, label="hip_theta", color='yellow')
+        plt.ylabel('rad')
+        plt.xlabel('Time')
+        plt.grid(True)
+        # plt.plot()
+        plt.tight_layout()
+        plt.savefig('advlqr_controller_output.png')
+        print("The image has been saved as 'pid_controller_output.png'")
     
     def inverse_kinematics(self, x, y, L1=THIGH_LENGTH, L2=CALF_LENGTH):
         # 計算 d    
@@ -157,7 +224,7 @@ class robotController():
             self.set_motor_cmd(motor_number=5 ,kp=0, kd=0, position=0, torque=-0.6, velocity=0)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.001)
-        for i in range(10):                        
+        for i in range(3):                        
             self.set_motor_cmd(motor_number=2, kp=i, kd=0.15, position=MOTOR_INIT_POS[2]-theta2_err*6.33*1.6)
             self.set_motor_cmd(motor_number=5, kp=i, kd=0.15, position=MOTOR_INIT_POS[5]+theta2_err*6.33*1.6)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
@@ -211,145 +278,138 @@ class robotController():
         self.lqr_thread.start()
 
     def get_yaw_speed(self, speed_left, speed_right):
+
         delta_speed = (speed_left-speed_right)* (2*np.pi*WHEEL_RADIUS)/60
         yaw_speed = delta_speed / WHEEL_DISTANCE
         return yaw_speed
     
+    def F_torque(self, knee_angle, F):
+
+        torque = F*math.cos(math.pi/2+knee_angle/2)*CALF_LENGTH
+
+        return torque
+    
+    def kalman_filter_data_fusion(self, dt, x, P): 
+        sigma_v = 0.01 #速度噪聲方差
+        sigma_a = 0.1 #加速度噪聲方差
+        sigma_process = 1 #過程噪聲方差
+        F = np.array([[1, dt],[0, 1]]) #狀態轉移矩陣
+        H = np.eye(2) #量測矩陣
+        Q = np.array([[sigma_v, 0],[0, sigma_a]]) #量測協方差矩陣
+        R = np.array([[sigma_process, 0],[0, sigma_process]]) #過程協方差矩陣
+        # gamma = np.array([[0.5*dt**2],[dt]])
+        #預測步驟
+        x_hat = F @ x #先驗估計
+        P = F @ P @ F.T + Q #先驗誤差協方差
+        #校正步驟
+        K = P @ H.T @ np.linalg.inv(H @ P @ H.T + R) #get kalman gain
+        x = x_hat + K @ (x - H @ x_hat) #後驗估計
+        P = (np.eye(2) - K @ H) @ P #更新誤差協方差
+        return x, P
+
     def adva_controller(self):
-        X = np.zeros((6, 2))  # X = [theta, d_theta, x, d_x, phi, d_phi]
-        U = np.zeros((2, 2))
-        X_ref = np.zeros((6, 2))
+        X = np.zeros((6, 1))  # X = [theta, d_theta, x, d_x, phi, d_phi]
+        U = np.zeros((2, 1))
+        X_ref = np.zeros((6, 1))
+        x = np.array([[0],[0]]) #kalman起始x
+        P_1 = np.array([[0.1, 0],[0, 0.1]]) #kalman起始P
         t0 = time.time()
-        leg_bias = 0.1
-        
-        # self.set_motor_cmd(motor_number=4,torque=0)
-        # self.set_motor_cmd(motor_number=1,torque=0)
-        # self.ros_manager.motor_cmd_pub.publish(self.cmd_list)       
+        start_time = time.time()
+        leg_bias = 0.150  
+        disp_s = 0    
+        L_knee_angle_inital = 1.12
+        R_knee_angle_inital = 0.874
+        Leg_desire = 0.215
+        feed_forward = 55.625
+
         while self.adva_running_flag==True and self.running_flag==False:
             with self.ros_manager.ctrl_condition:
                 self.ros_manager.ctrl_condition.wait()
+            current_time = time.time() - start_time
             t1 = time.time()
             dt = t1 - t0
             t0 = t1
-            print(1/dt)
+            speed, yaw_ref = self.ros_manager.get_joy_vel()
+            speed = speed*15
+            if abs(X_ref[2, 0]-X[2, 0]) > 1.5: #限制防止位移過度累加
+                speed = 0
+            disp_s = disp_s + speed*dt
+            X_ref[2, 0] = disp_s
+            yaw_ref = yaw_ref*5
+            # print(X_ref[3, 0],yaw_ref)
             X_last = np.copy(X)
             foc_status_left, foc_status_right = self.ros_manager.get_foc_status()
-            
-            X[3, 0] = foc_status_right.speed * (2*np.pi*WHEEL_RADIUS)/60
-            X[3, 1] = foc_status_left.speed * (2*np.pi*WHEEL_RADIUS)/60
-            X[2, 0] = X_last[2, 0] + X[3, 0] * dt 
-            X[2, 1] = X_last[2, 1] + X[3, 1] * dt 
+            ws_r = foc_status_right.speed * (2*np.pi*WHEEL_RADIUS)/60
+            ws_l = foc_status_left.speed * (2*np.pi*WHEEL_RADIUS)/60
+            x[0, 0] = (ws_l + ws_r)/2
+            x[1, 0] = self.ros_manager.get_linear_acc()
+            x, P_1 = self.kalman_filter_data_fusion(dt, x, P_1)
+            X[3, 0] = x[0, 0]
+            X[4, 0], X[5, 0], roll = self.ros_manager.get_orientation()
+            X[4, 0], X[5, 0] = -X[4, 0], -X[5, 0]
+            X[2, 0] = X_last[2, 0] + X[3, 0] * dt
+            Lleg_position = (12.786 - self.ros_manager.motor_states[4].q)/6.33 - math.radians(60)-X[4, 0]-leg_bias
+            Rleg_position = -(-4.486 - self.ros_manager.motor_states[1].q)/6.33 - math.radians(60)-X[4, 0]-leg_bias
+            X[0, 0] = (Lleg_position+Rleg_position)/2
+            X[1, 0] = (-self.ros_manager.motor_states[4].dq+self.ros_manager.motor_states[1].dq)/(6.33*2)
 
-            X[4, 0], X[5, 0] = self.ros_manager.get_orientation()
-            X[4, 1], X[5, 1] = -X[4, 1], -X[5, 1]
-            X[4, 0], X[5, 0] = X[4, 1], X[5, 1]
-            X[0, 0] = (12.786 - self.ros_manager.motor_states[4].q) - math.radians(60)-X[4, 0]-leg_bias
-            X[0, 1] = -(-4.486 - self.ros_manager.motor_states[1].q) - math.radians(60)-X[4, 0]-leg_bias
-            X[1, 0] = self.ros_manager.motor_states[4].dq
-            X[1, 1] = self.ros_manager.motor_states[1].dq
-            print(X[0, 0],X[0, 1])
-            
-            
-            # if abs(X[4, 0]) > math.radians(20) or abs(X[0, 0]) > math.radians(15) or abs(X[0, 1]) > math.radians(15):     # constrain
-            #     # U[0, 0] = 0.0
-            #     # print(X[0,0],X[0,1])
-            #     self.set_motor_cmd(motor_number=4,torque=0)
-            #     self.set_motor_cmd(motor_number=1,torque=0)
-            #     self.ros_manager.send_foc_command(0.0, 0.0)
-            #     self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
-            #     continue
+            L_knee_angle = (self.ros_manager.motor_states[2].q - L_knee_angle_inital)/(6.33*1.6)
+            R_knee_angle = (R_knee_angle_inital - self.ros_manager.motor_states[5].q)/(6.33*1.6)
+            avg_knee_angle = (L_knee_angle + R_knee_angle)/2
+            L_leg_long = math.sin(L_knee_angle/2)*(THIGH_LENGTH*2)
+            R_leg_long = math.sin(R_knee_angle/2)*(THIGH_LENGTH*2)
 
             U = np.copy(self.lqr_controller.advance_lqr_control(X,X_ref))
-            print(U[0,0],U[0,1],U[1,0],U[1,1])
 
-            motor_command_right = U[0,0]
-            motor_command_left = U[0,1]
-            thigh_command_right = U[1,0]
-            thigh_command_left = U[1,1]
-            # soft constrain
-            motor_command_left = max(-1.5, min(motor_command_left, 1.5))
-            motor_command_right = max(-1.5, min(motor_command_right, 1.5))
-            thigh_command_right = max(-1.5, min(thigh_command_right, 1.5))
-            thigh_command_left = max(-1.5, min(thigh_command_left, 1.5))
-
-            # self.set_motor_cmd(motor_number=4,torque=thigh_command_right/6.33)
-            # self.set_motor_cmd(motor_number=1,torque=thigh_command_left/6.33)
+            yaw_speed = self.get_yaw_speed(foc_status_left.speed, foc_status_right.speed)
+            target = yaw_ref
+            output = self.turning_pid2.update(target,yaw_speed, dt)
+            angle_error = Lleg_position - Rleg_position
+            output2 = self.hip_pid.update(0, angle_error, dt)
+            U_wr = U[0, 0] - output
+            U_wl = U[0, 0] + output
+            U_tr = U[1, 0] + output2
+            U_tl = U[1, 0] - output2
             
+            # print(U[0, 0], U[1, 0])
+            motor_command_right = U_wr
+            motor_command_left = U_wl
+            thigh_command_right = U_tr
+            thigh_command_left = U_tl
+            # soft constrain
+            motor_command_left = max(-3, min(motor_command_left, 3))
+            motor_command_right = max(-3, min(motor_command_right, 3))
+            thigh_command_right = max(-2.5, min(thigh_command_right, 2.5))
+            thigh_command_left = max(-2.5, min(thigh_command_left, 2.5))
+
+            self.set_motor_cmd(motor_number=4,torque=-thigh_command_right/6.33)
+            self.set_motor_cmd(motor_number=1,torque=thigh_command_left/6.33)
+            # self.set_motor_cmd(motor_number=2,torque=L_knee_torque/(6.33*1.6))
+            # self.set_motor_cmd(motor_number=5,torque=-R_knee_torque/(6.33*1.6))
+
             # self.ros_manager.send_foc_command(motor_command_left , motor_command_right)
             # self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
 
-    def controller(self):
-        self.ros_manager.get_logger().info('controller start')
-        X = np.zeros((4, 1))    # X = [x, x_dot, theta, theta_dot]
-        U = np.zeros((1, 1))
-        t0 = time.time()
-        X_ref = np.zeros((4, 1))
-        yaw_ref = 0.
-        yaw_speed = 0.
-        start_time = time.time()
-        X_list = []
-        U_list = []
+            self.phi_list.append(X[4, 0])
+            self.theta_list.append(X[0, 0])
+            self.x_dot_list.append(X[3, 0])
+            self.X_list.append(X[2, 0])
+            self.x_dot_ref_list.append(speed)
+            self.acc_x.append(x[1, 0])
+            self.hip_theta.append(self.ros_manager.motor_states[4].q)
+            self.time_list.append(current_time)
 
-        while self.running_flag==True and self.adva_running_flag==False:
-            with self.ros_manager.ctrl_condition:
-                self.ros_manager.ctrl_condition.wait()
-            
-            t1 = time.time()
-            dt = t1 - t0
-            t0 = t1
-            X_ref[2, 0], yaw_ref = self.ros_manager.get_joy_vel()
-            X_ref[2, 0] += MID_ANGLE
-            X_last = np.copy(X)
-            foc_status_left, foc_status_right = self.ros_manager.get_foc_status()
-            # get motor data
-            X[1, 0] = (foc_status_left.speed + foc_status_right.speed) / 2 * (2*np.pi*WHEEL_RADIUS)/60
-            X[0, 0] = X_last[0, 0] + X[1, 0] * dt * WHEEL_RADIUS     # wheel radius 0.08m
-            # print(X[0, 0])
-            # get IMU data
-            X[2, 0], X[3, 0] = self.ros_manager.get_orientation()
-            # X[2, 0], _ = self.ros_manager.get_orientation()
-            # X[3, 0] = (X[2, 0] - X_last[2, 0]) / dt
-            if abs(X[2, 0]) > math.radians(40):     # constrain
-                # U[0, 0] = 0.0
+            if abs(X[4, 0]) > math.radians(25) or abs(Lleg_position+X[4, 0]) > math.radians(45) or abs(Rleg_position+X[4, 0]) > math.radians(45) or abs(X_ref[2, 0]-X[2, 0]) > 2.5:     # constrain
+                
+                print("out of constrain",X[0, 0])
+                self.set_motor_cmd(motor_number=4,torque=0,kd = 0.01)
+                self.set_motor_cmd(motor_number=1,torque=0,kd = 0.01)
+                self.set_motor_cmd(motor_number=2,torque=0,kd = 0.005)
+                self.set_motor_cmd(motor_number=5,torque=0,kd = 0.005)
                 self.ros_manager.send_foc_command(0.0, 0.0)
-                continue
-            
-            # get u from lqr
-            U = np.copy(self.lqr_controller.lqr_control(X, X_ref))
-            yaw_speed = self.get_yaw_speed(foc_status_left.speed, foc_status_right.speed)
-            yaw_torque = self.turning_pid.update(yaw_ref, yaw_speed, dt)
-
-            if (time.time()-start_time) < 3:
-                yaw_torque = 0.0
-            if (time.time()-start_time) > 3:
-                self.calibrate_com()
-                self.update_pose()
-                self.lqr_controller.change_K(self.l_bar)
-            motor_command_left = U[0, 0] + yaw_torque
-            motor_command_right = U[0, 0] - yaw_torque
-            # soft constrain
-            motor_command_left = max(-1.5, min(motor_command_left, 1.5))
-            motor_command_right = max(-1.5, min(motor_command_right, 1.5))
-
-            self.ros_manager.send_foc_command(motor_command_left, motor_command_right)
-             
-            
-
-            if len(X_list)<=1001:
-                # print(len(X_list))
-                X_list.append(np.copy(X))
-                U_list.append(np.copy(U))
-                if len(X_list)==1000:
-                    formated_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-                    directory = f"/home/crazydog/crazydog/crazydog_ws/src/lqr_control/lqr_control/log/{formated_time}"
-                    os.makedirs(directory, exist_ok=True)  
-                    with open(os.path.join(directory, 'x.plk'), 'wb') as f1:
-                        pickle.dump(X_list, f1)
-                    with open(os.path.join(directory, 'u.plk'), 'wb') as f2:
-                        pickle.dump(U_list, f2)
-            # else:
-            #     print('log saved')
-
+                self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
+                self.adva_running_flag = False
+                break
 
     def disableController(self):
         self.running_flag = False
@@ -384,6 +444,7 @@ def main(args=None):
         "l": robot.locklegs,
         "e": robot.enable_ros_manager,
         "stand": robot.standup,
+        "p":robot.plotResult,
     }
 
     while True:

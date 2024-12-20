@@ -23,7 +23,7 @@ class robotController():
         rclpy.init()
         self.rl_thread = None
         # Initialize ONNX model
-        self.model_path = '/home/crazydog/crazydog/crazydog_ws/src/rl_control/rl_control/model/2024-12-16_17-31-34/exported/policy.onnx'
+        self.model_path = '/home/crazydog/crazydog/crazydog_ws/src/rl_control/rl_control/model/2024-12-19_13-17-56/exported/policy.onnx'
         self.ort_session = ort.InferenceSession(self.model_path)
 
 
@@ -83,24 +83,26 @@ class robotController():
     def locklegs(self):
         # self.ros_manager.wheel_coordinate = [-0.0639-ORIGIN_BIAS[0], -0.003637-ORIGIN_BIAS[1]]
         # theta1_err, theta2_err = self.get_angle_error(self.ros_manager.wheel_coordinate)     # lock legs coordinate [x, y] (hip joint coordinate (0.0742, 0))
-        while self.ros_manager.get_joint_pos('thigh_l') <= 1.271 and self.ros_manager.get_joint_pos('thigh_r') <= 1.271:
+        thigh_angle = 1.216 # 1.271
+        calf_angle = -2.14  # -2.12773
+        while self.ros_manager.get_joint_pos('thigh_l') <= thigh_angle and self.ros_manager.get_joint_pos('thigh_r') <= thigh_angle:
             self.set_motor_cmd(motor_number=1, kp=0, kd=0.05, position=0, torque=0, velocity=0.2, scaling=False)
             self.set_motor_cmd(motor_number=4, kp=0, kd=0.05, position=0, torque=0, velocity=-0.2, scaling=False)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.001)
         for i in range(20):                        
-            self.set_motor_cmd(motor_number=1, kp=i, kd=0.12, position=1.271, scaling=True)
-            self.set_motor_cmd(motor_number=4, kp=i, kd=0.12, position=1.271, scaling=True)
+            self.set_motor_cmd(motor_number=1, kp=i, kd=0.12, position=thigh_angle, scaling=True)
+            self.set_motor_cmd(motor_number=4, kp=i, kd=0.12, position=thigh_angle, scaling=True)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.01)
-        while self.ros_manager.get_joint_pos('calf_l') <= -2.12773 and self.ros_manager.get_joint_pos('calf_r') <= -2.12773:
+        while self.ros_manager.get_joint_pos('calf_l') <= calf_angle and self.ros_manager.get_joint_pos('calf_r') <= calf_angle:
             self.set_motor_cmd(motor_number=2, kp=0, kd=0, position=0, torque=0.7, velocity=0, scaling=False)
             self.set_motor_cmd(motor_number=5 ,kp=0, kd=0, position=0, torque=-0.7, velocity=0, scaling=False)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.001)
         for i in range(20):                        
-            self.set_motor_cmd(motor_number=2, kp=i, kd=0.15, position=-2.12773, scaling=True)
-            self.set_motor_cmd(motor_number=5, kp=i, kd=0.15, position=-2.12773, scaling=True)
+            self.set_motor_cmd(motor_number=2, kp=i, kd=0.15, position=calf_angle, scaling=True)
+            self.set_motor_cmd(motor_number=5, kp=i, kd=0.15, position=calf_angle, scaling=True)
             self.ros_manager.motor_cmd_pub.publish(self.cmd_list)
             time.sleep(0.01)        
 
