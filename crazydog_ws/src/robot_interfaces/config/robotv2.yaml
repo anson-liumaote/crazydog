@@ -1,0 +1,55 @@
+foc_data_pub: 
+  ros__parameters:
+    gear_ratio_M3508: 15.76
+    gear_ratio_M2006: 36.0
+
+unitree_left_pub:  
+  ros__parameters:
+    activate_motors: [0, 1, 2]
+    motors: 
+      0: 
+        origin: -0.144
+        scale: 6.33
+        max: 0.425
+        min: -0.523
+      1: 
+        origin: -2.17
+        scale: 6.33
+        max: 3.14
+        min: 0.0
+      2: 
+        origin: 31.785
+        scale: 10.128
+        max: 0.0
+        min: -2.7
+
+unitree_right_pub:  
+  ros__parameters:
+    activate_motors: [3, 4, 5]
+    motors: 
+      3: 
+        origin: 8.394
+        scale: 6.33
+        max: 0.523
+        min: -0.47
+      4: 
+        origin: 10.0
+        scale: -6.33
+        max: 3.14
+        min: 0.0
+      5: 
+        origin: -23.827
+        scale: -10.128
+        max: 0.0
+        min: -2.7
+  
+jointstate_pub:  
+  ros__parameters:
+    joint_names: ["hip_l", "thigh_l","calf_l","hip_r","thigh_r","calf_r", "wheel_l", "wheel_r"]
+    motor_origin_pos: [-0.144, -2.17, 31.785, 8.394, 10.0, -23.827, 0.0, 0.0]
+    scale: [6.33, 6.33, 10.128, 6.33, -6.33, -10.128, 1.0, 1.0]
+
+odom_pub:  
+  ros__parameters:
+    wheel_radius: 0.07
+    wheel_distance: 0.355

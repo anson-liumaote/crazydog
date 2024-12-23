@@ -18,14 +18,22 @@ class focCommandSubscriber(Node):
         can_interface = 'can0'
         self.bus = can.interface.Bus(channel=can_interface, interface='socketcan')
 
-    def listener_callback(self, msg):
-        motor1_current = max(-10, min(10, msg.data[0]))     # constrain -20~20
-        motor2_current = max(-10, min(10, msg.data[1]))     # constrain -20~20
+    def listener_callback(self, msg: Float32MultiArray):
+        torque_const_M3508 = 0.247  # N-m/A 
+        torque_const_M2006 = 0.18  # N-m/A 
+        motor1_current = max(-10, min(10, msg.data[0]/torque_const_M3508))     # constrain -20~20
+        motor2_current = max(-10, min(10, msg.data[1]/torque_const_M3508))     # constrain -20~20
+        try:
+            motor3_current = max(-5, min(5, msg.data[2]/torque_const_M2006)) # constrain -5~5
+        except:
+            motor3_current = 0.0
         motor1_cmd = int(motor1_current*16384/20)
         motor2_cmd = int(motor2_current*16384/20)
+        motor3_cmd = int(motor3_current*10000/10)
         print(motor1_cmd, motor2_cmd)
         motor1_highByte, motor1_lowByte = self.int_to_high_low_bytes(motor1_cmd)
         motor2_highByte, motor2_lowByte = self.int_to_high_low_bytes(motor2_cmd)
+        motor3_highByte, motor3_lowByte = self.int_to_high_low_bytes(motor3_cmd)
 
         self.canMsg = can.Message(
             arbitration_id=0x200,
@@ -33,7 +41,9 @@ class focCommandSubscriber(Node):
                   motor1_lowByte, 
                   motor2_highByte, 
                   motor2_lowByte,
-                  0x00, 0x00, 0x00, 0x00],
+                  motor3_highByte, 
+                  motor3_lowByte,
+                  0x00, 0x00],
             is_extended_id=False  # Use True for extended ID (29-bit)
         )
 
