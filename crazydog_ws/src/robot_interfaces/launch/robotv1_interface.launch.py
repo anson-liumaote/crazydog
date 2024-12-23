@@ -38,12 +38,6 @@ def generate_launch_description():
             executable='joy_controller',
             name='joy_controller'
         ),
-        # Node(
-        #     package='robot_interfaces',
-        #     executable='unitree_pubsub',
-        #     name='unitree_pubsub',
-        #     parameters=[config]
-        # ),
         Node(
             package='robot_interfaces',
             executable='unitree_left_pub',
